@@ -1,10 +1,10 @@
 # Examples
 
 
-The following examples require you to have a valid Snyk token file on your system. You can create this by running `snyk auth` with your Snyk CLI. This will create a token file at `.config/configstore`. See [Snyk CLI](https://github.com/snyk/snyk#installation). You can use either a [personal token](https://app.snyk.io/account) or a [service account](https://snyk.io/docs/service-accounts/). 
+The following examples require you to have a valid Snyk token file on your system. You can create this by running `snyk auth` with your Snyk CLI. This will create a token file at `.config/configstore`. See [Snyk CLI](https://github.com/snyk/snyk#installation). You can use either a [personal token](https://app.snyk.io/account) or a [service account](https://snyk.io/docs/service-accounts/).
 
 ## Running a Script
-The sample scripts are all a bit different, so you should try them each out or look at the code. 
+The sample scripts are all a bit different, so you should try them each out or look at the code.
 
 1. Install `pysnyk` using `pip install pysnyk`
 1. You can execute an example in general using:
@@ -22,7 +22,7 @@ python examples/api-demo-2-list-issues.py --orgId=<your-snyk-org> --projectId=<s
 ```
 
 ## Update GitHub Checks Settings
-Use this to update the GitHub checks settings for a particular projectId or all GitHub projects in your Snyk org. 
+Use this to update the GitHub checks settings for a particular projectId or all GitHub projects in your Snyk org.
 ```
 python examples/api-demo-11-update-github-checks.py --orgId=<your-snyk-org> --projectId=<snyk-project-id>|all --pullRequestTestEnabled=[true|false]
 ```
@@ -83,4 +83,19 @@ python examples/api-demo-6-find-issues-without-jira-issues.py --orgId=<your-snyk
 To create a Jira Issue for each project issue:
 ```
 python examples/api-demo-6b-create-jira-issues-for-issues.py --orgId=<your-snyk-org> --projectId=<snyk-project-id> --jiraIssueType=<jira-issue-type-id> --jiraProjectId=<jira-project-id>
+```
+
+## Organization Vulnerability Report
+
+To create a report containing all projects and their current vulnerabilities within an organisation:
+```
+python examples/OrgVulnReport.py --orgIds=<your-snyk-org>
+```
+If wish to run the script for multiple orgs, add further orgIds separated by space:
+```
+python examples/OrgVulnReport.py --orgIds=<snyk-org-1> <snyk-org-2>
+```
+Optional: Manually set API Key
+```
+python examples/OrgVulnReport.py --apiKey=<snyk-api-key> --orgIds=<your-snyk-org>
 ```
