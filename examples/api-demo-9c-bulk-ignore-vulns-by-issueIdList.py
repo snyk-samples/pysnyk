@@ -9,8 +9,13 @@ from utils import get_default_token_path, get_token
 
 def parse_command_line_args():
     parser = argparse.ArgumentParser(description="Snyk API Examples")
-    parser.add_argument("--orgId", type=str,
+    parser.add_argument("--url", type=str, help="The Snyk server URL, blank for public server.")
+    parser.add_argument("--orgId", type=str, default="",
                         help="The Snyk Organisation Id", required=True)
+    parser.add_argument("--projectId", type=str, default="",
+                        help="Work on issues of a single project instead of all projects.")
+    parser.add_argument("--issueSeverity", type=str,
+                        help="In addition to ignoring issues that are explicitly listed with --issueIdList, also ignore all which have this severity. Example: --issueSeverity=low")
     # Store issueId as list (--issueIdList=SNYK-JS-HANDLEBARS-173692,SNYK-JS-JSYAML-174129 as example)
     parser.add_argument("--issueIdList", type=str,
                         help="The Snyk Issue IdList", required=True)
@@ -20,6 +25,8 @@ def parse_command_line_args():
                         help="Optional. Expiration time of ignore. e.g. yyyy-mm-dd or yyyy-mm-ddThh:mm:ss.aaaZ",)
     parser.add_argument("--reason", type=str,
                         help="Optional. Reason for ignoring e.g. \"We do not use this library.\"",)
+    parser.add_argument("--noDryRun", action='store_true', default=False,
+                        help="Really ignore issue.")
     args = parser.parse_args()
     return args
 snyk_token_path = get_default_token_path()
@@ -53,10 +60,15 @@ else:
         confirm = 2
     else:
         confirm = 3
-client = SnykClient(token=snyk_token)
+client = SnykClient(snyk_token, args.url, debug=True)
 # API call to collect every project in all of a customers orgs
 
-for proj in client.organizations.get(org_id).projects.all():
+if args.projectId != "":
+    projects = [client.organizations.get(org_id).projects.get(args.projectId)]
+else:
+    projects = client.organizations.get(org_id).projects.all()
+
+for proj in projects:
     print("\nProject name: %s" % proj.name)
     print("  Issues Found:")
     print("      High  : %s" % proj.issueCountsBySeverity.high)
@@ -70,11 +82,11 @@ for proj in client.organizations.get(org_id).projects.all():
     parsed_input = r.json()
     print (parsed_input)
     issues = parsed_input["issues"]
-    print("List the Vulnerbilities")
-    print (issues["vulnerabilities"])
+    if not args.noDryRun:
+        print("List the Vulnerbilities")
+        print (issues["vulnerabilities"])
     for i in issues["vulnerabilities"]:
-        # HERE
-        if i["id"] in issue_ids:
+        if i["severity"] == args.issueSeverity or i["id"] in issue_ids:
             values_object = {
                 "ignorePath": "",
                 "reasonType": reason_type,
@@ -85,4 +97,7 @@ for proj in client.organizations.get(org_id).projects.all():
             if expires is not None:
                 values_object["expires"] = expires
             api_url = "org/%s/project/%s/ignore/%s" % (org_id, proj.id , i["id"])
-            r2 = client.post(api_url, values_object)
+            if args.noDryRun:
+                client.post(api_url, values_object)
+            else:
+                print("dry run enabled: would ignore: ", api_url, values_object)
