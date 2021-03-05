@@ -8,6 +8,17 @@ A Python client for the [Snyk API](https://snyk.docs.apiary.io/#).
 
 Using the client requires you to provide your Snyk API token.
 
+```bash
+pip3 install snyk
+```
+
+Or add to your requirements.txt file and run:
+```
+pip3 install -r requirements.txt
+```
+
+Then:
+
 ```python
 import snyk
 client = snyk.SnykClient("<your-api-token>")
