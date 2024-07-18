@@ -12,6 +12,7 @@ from snyk.utils import load_test_data
 TEST_DATA = os.path.join(os.path.dirname(__file__), "test_data")
 
 REST_ORG = "39ddc762-b1b9-41ce-ab42-defbe4575bd6"
+REST_PROJECT = "1ae27847-83d0-40f8-be5c-93438336cc3e"
 REST_URL = "https://api.snyk.io/rest"
 REST_VERSION = "2022-02-16~experimental"
 
@@ -296,6 +297,17 @@ class TestSnykClient(object):
         targets = rest_client.get(f"orgs/{REST_ORG}/targets", t_params).json()
 
         assert len(targets["data"]) == 10
+
+    def test_rest_delete(self, requests_mock, rest_client, rest_targets_page1):
+        requests_mock.delete(
+            f"{REST_URL}/orgs/{REST_ORG}/projects/{REST_PROJECT}?version={REST_VERSION}",
+            status_code=204,
+            json={},
+        )
+
+        rest_client.delete(f"orgs/{REST_ORG}/projects/{REST_PROJECT}")
+
+        assert requests_mock.call_count == 1
 
     def test_get_rest_pages(
         self,

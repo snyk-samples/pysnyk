@@ -196,14 +196,30 @@ class SnykClient(object):
 
         return resp
 
-    def delete(self, path: str) -> requests.Response:
-        url = f"{self.api_url}/{path}"
+    def delete(
+        self,
+        path: str,
+        version: str = None,
+    ) -> requests.Response:
+        if version:
+            url = f"{self.rest_api_url}/{path}?version={version}"
+        else:
+            url = f"{self.api_url}/{path}"
+
         logger.debug(f"DELETE: {url}")
+
+        if version or self.version:
+            params = {}
+            params["version"] = version or self.version
+
+            fkwargs = {"headers": self.api_headers, "params": params}
+        else:
+            fkwargs = {"headers": self.api_headers}
 
         resp = retry_call(
             self.request,
             fargs=[requests.delete, url],
-            fkwargs={"headers": self.api_headers},
+            fkwargs=fkwargs,
             tries=self.tries,
             delay=self.delay,
             backoff=self.backoff,
