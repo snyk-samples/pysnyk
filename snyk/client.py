@@ -1,6 +1,6 @@
 import logging
 import urllib.parse
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Dict
 from urllib.parse import parse_qs, urlparse
 
 import requests
@@ -21,17 +21,17 @@ class SnykClient(object):
     USER_AGENT = "pysnyk/%s" % __version__
 
     def __init__(
-        self,
-        token: str,
-        url: Optional[str] = None,
-        rest_api_url: Optional[str] = None,
-        user_agent: Optional[str] = USER_AGENT,
-        debug: bool = False,
-        tries: int = 1,
-        delay: int = 1,
-        backoff: int = 2,
-        verify: bool = True,
-        version: Optional[str] = None,
+            self,
+            token: str,
+            url: Optional[str] = None,
+            rest_api_url: Optional[str] = None,
+            user_agent: Optional[str] = USER_AGENT,
+            debug: bool = False,
+            tries: int = 1,
+            delay: int = 1,
+            backoff: int = 2,
+            verify: bool = True,
+            version: Optional[str] = None,
     ):
         self.api_token = token
         self.api_url = url or self.API_URL
@@ -58,12 +58,12 @@ class SnykClient(object):
             logging.basicConfig(level=logging.DEBUG)
 
     def request(
-        self,
-        method,
-        url: str,
-        headers: object,
-        params: object = None,
-        json: object = None,
+            self,
+            method,
+            url: str,
+            headers: object,
+            params: object = None,
+            json: object = None,
     ) -> requests.Response:
 
         if params and json:
@@ -123,12 +123,12 @@ class SnykClient(object):
         return resp
 
     def get(
-        self,
-        path: str,
-        params: dict = None,
-        version: str = None,
-        exclude_version: bool = False,
-        exclude_params: bool = False,
+            self,
+            path: str,
+            params: dict = None,
+            version: str = None,
+            exclude_version: bool = False,
+            exclude_params: bool = False,
     ) -> requests.Response:
         """
         Rest (formerly v3) Compatible Snyk Client, assumes the presence of Version, either set in the client
@@ -236,8 +236,8 @@ class SnykClient(object):
             if "next" in page_data["links"]:
                 # If the next url is the same as the current url, break out of the loop
                 if (
-                    "self" in page_data["links"]
-                    and page_data["links"]["next"] == page_data["links"]["self"]
+                        "self" in page_data["links"]
+                        and page_data["links"]["next"] == page_data["links"]["self"]
                 ):
                     break
                 else:
@@ -293,3 +293,9 @@ class SnykClient(object):
     # https://snyk.docs.apiary.io/#reference/reporting-api/issues/get-list-of-issues
     def issues(self):
         raise SnykNotImplementedError  # pragma: no cover
+
+
+    def __convert_v1_to_rest_endpoint(self, path: str) -> str:
+        uuid_pattern = r'[0-9a-f]{8}-[0-9a-f]{4}-[4][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}'
+
+
