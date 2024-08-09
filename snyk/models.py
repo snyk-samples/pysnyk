@@ -815,7 +815,7 @@ class V1ToRestConversion:
         self.rest_verb = rest_verb
 
 
-class ProjectV1ToRestConversion(V1ToRestConversion):
+class ProjectV1ToRestConversion:
     def convert_delete_request(self):
         pass
 

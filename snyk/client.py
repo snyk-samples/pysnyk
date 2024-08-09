@@ -1,4 +1,5 @@
 import logging
+import re
 import urllib.parse
 from typing import Any, List, Optional, Dict
 from urllib.parse import parse_qs, urlparse
@@ -47,6 +48,7 @@ class SnykClient(object):
         self.delay = delay
         self.verify = verify
         self.version = version
+        self.__uuid_pattern = r'[0-9a-f]{8}-[0-9a-f]{4}-[4][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}'
 
         # Ensure we don't have a trailing /
         if self.api_url[-1] == "/":
@@ -197,6 +199,8 @@ class SnykClient(object):
         return resp
 
     def delete(self, path: str) -> requests.Response:
+        is_v1_project_path: bool = self.__is_v1_project_path(path)
+        
         url = f"{self.api_url}/{path}"
         logger.debug(f"DELETE: {url}")
 
@@ -294,8 +298,13 @@ class SnykClient(object):
     def issues(self):
         raise SnykNotImplementedError  # pragma: no cover
 
+    def __is_v1_project_path(self, path: str) -> bool:
+        v1_to_rest_paths: List[str] = [
+            rf"org/{self.__uuid_pattern}/project/{self.__uuid_pattern}/?"
+        ]
 
-    def __convert_v1_to_rest_endpoint(self, path: str) -> str:
-        uuid_pattern = r'[0-9a-f]{8}-[0-9a-f]{4}-[4][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}'
+        for v1_path in v1_to_rest_paths:
+            if re.match(v1_path, path):
+                return True
 
-
+        return False
