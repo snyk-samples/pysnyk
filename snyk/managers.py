@@ -1,5 +1,4 @@
 import abc
-import json
 from typing import Any, Dict, List
 
 from deprecation import deprecated  # type: ignore
@@ -411,9 +410,9 @@ class JiraIssueManager(DictManager):
         # The response we get is not following the schema as specified by the api
         # https://snyk.docs.apiary.io/#reference/projects/project-jira-issues-/create-jira-issue
         if (
-            issue_id in response_data
-            and len(response_data[issue_id]) > 0
-            and "jiraIssue" in response_data[issue_id][0]
+                issue_id in response_data
+                and len(response_data[issue_id]) > 0
+                and "jiraIssue" in response_data[issue_id][0]
         ):
             return response_data[issue_id][0]["jiraIssue"]
         raise SnykError

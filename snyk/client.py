@@ -1,7 +1,7 @@
 import logging
 import re
 import urllib.parse
-from typing import Any, List, Optional, Dict
+from typing import Any, List, Optional
 from urllib.parse import parse_qs, urlparse
 
 import requests
@@ -200,8 +200,14 @@ class SnykClient(object):
 
     def delete(self, path: str) -> requests.Response:
         is_v1_project_path: bool = self.__is_v1_project_path(path)
-        
-        url = f"{self.api_url}/{path}"
+        if is_v1_project_path:
+            ids = re.findall(rf"{self.__uuid_pattern}", path)
+            path = f"orgs/{ids[0]}/projects/{ids[1]}?version={self.version if self.version else '2024-06-21'}"
+            url = f"{self.rest_api_url}/{path}"
+        else:
+            url = f"{self.api_url}/{path}"
+        # url = f"{self.api_url}/{path}"
+
         logger.debug(f"DELETE: {url}")
 
         resp = retry_call(
@@ -299,11 +305,11 @@ class SnykClient(object):
         raise SnykNotImplementedError  # pragma: no cover
 
     def __is_v1_project_path(self, path: str) -> bool:
-        v1_to_rest_paths: List[str] = [
+        v1_paths: List[str] = [
             rf"org/{self.__uuid_pattern}/project/{self.__uuid_pattern}/?"
         ]
 
-        for v1_path in v1_to_rest_paths:
+        for v1_path in v1_paths:
             if re.match(v1_path, path):
                 return True
 

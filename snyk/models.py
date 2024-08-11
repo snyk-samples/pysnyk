@@ -3,7 +3,6 @@ import re
 from dataclasses import InitVar, dataclass, field
 from typing import Any, Dict, List, Optional, Union
 
-import requests
 from deprecation import deprecated  # type: ignore
 from mashumaro.mixins.json import DataClassJSONMixin  # type: ignore
 
@@ -245,7 +244,7 @@ class Organization(DataClassJSONMixin):
     # https://snyk.docs.apiary.io/#reference/users/user-organisation-notification-settings/modify-org-notification-settings
     # https://snyk.docs.apiary.io/#reference/users/user-organisation-notification-settings/get-org-notification-settings
     def notification_settings(self):
-        raise SnykNotImplemented  # pragma: no cover
+        raise SnykNotImplementedError  # pragma: no cover
 
     # https://snyk.docs.apiary.io/#reference/organisations/the-snyk-organisation-for-a-request/invite-users
     def invite(self, email: str, admin: bool = False) -> bool:
