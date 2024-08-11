@@ -287,7 +287,7 @@ class Organization(DataClassJSONMixin):
         return IssueSet.from_dict(resp.json())
 
     def test_maven(
-            self, package_group_id: str, package_artifact_id: str, version: str
+        self, package_group_id: str, package_artifact_id: str, version: str
     ) -> IssueSet:
         path = "test/maven/%s/%s/%s?org=%s" % (
             package_group_id,
@@ -393,7 +393,7 @@ class Integration(DataClassJSONMixin):
         return bool(self.organization.client.post(path, payload))
 
     def import_git(
-            self, owner: str, name: str, branch: str = "master", files: List[str] = []
+        self, owner: str, name: str, branch: str = "master", files: List[str] = []
     ):
         return self._import(
             {
@@ -417,7 +417,7 @@ class Integration(DataClassJSONMixin):
         )
 
     def import_bitbucket(
-            self, project_key: str, name: str, repo_slug: str, files: List[str] = []
+        self, project_key: str, name: str, repo_slug: str, files: List[str] = []
     ):
         return self._import(
             {
@@ -752,7 +752,7 @@ class Project(DataClassJSONMixin):
         raise SnykNotImplementedError  # pragma: no cover
 
     def _aggregated_issue_to_vulnerabily(
-            self, issue: AggregatedIssue
+        self, issue: AggregatedIssue
     ) -> List[Vulnerability]:
         issue_paths = Manager.factory(
             IssuePaths,
