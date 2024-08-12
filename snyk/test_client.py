@@ -194,8 +194,8 @@ class TestSnykClient(object):
         matcher = re.compile("projects.*$")
         requests_mock.get(matcher, json=projects)
         assert (
-                "testing-new-name"
-                == client.projects.get("f9fec29a-d288-40d9-a019-cedf825e6efb").name
+            "testing-new-name"
+            == client.projects.get("f9fec29a-d288-40d9-a019-cedf825e6efb").name
         )
 
     def test_non_existent_project(self, requests_mock, client, organizations, projects):
@@ -259,12 +259,12 @@ class TestSnykClient(object):
         assert len(targets["data"]) == 10
 
     def test_get_v3_pages(
-            self,
-            requests_mock,
-            v3_client,
-            v3_targets_page1,
-            v3_targets_page2,
-            v3_targets_page3,
+        self,
+        requests_mock,
+        v3_client,
+        v3_targets_page1,
+        v3_targets_page2,
+        v3_targets_page3,
     ):
         requests_mock.get(
             f"{V3_URL}/orgs/{V3_ORG}/targets?limit=10&version={V3_VERSION}",
@@ -296,12 +296,12 @@ class TestSnykClient(object):
         assert len(targets["data"]) == 10
 
     def test_get_rest_pages(
-            self,
-            requests_mock,
-            rest_client,
-            rest_targets_page1,
-            rest_targets_page2,
-            rest_targets_page3,
+        self,
+        requests_mock,
+        rest_client,
+        rest_targets_page1,
+        rest_targets_page2,
+        rest_targets_page3,
     ):
         requests_mock.get(
             f"{REST_URL}/orgs/{REST_ORG}/targets?limit=10&version={REST_VERSION}",
@@ -328,15 +328,43 @@ class TestSnykClient(object):
         params = {"limit": 10}
         rest_client.get(f"orgs/{REST_ORG}/projects?limit=100", params)
 
-    def test_patch_update_project_should_return_new_project(self, requests_mock, rest_client, projects):
+    def test_patch_update_project_should_return_new_project(
+        self, requests_mock, rest_client, projects
+    ):
         matcher = re.compile("projects/f9fec29a-d288-40d9-a019-cedf825e6efb")
         project = projects["data"][0]
-        project["attributes"]["tags"] = [{"key": "test_key", "value": "test_value"}]
-        project["attributes"]["environment"] = ["backend"]
-        project["attributes"]["lifecycle"] = ["development"]
+        body = {
+            "data": {
+                "attributes": {
+                    "business_criticality": ["critical"],
+                    "environment": ["backend", "internal"],
+                    "lifecycle": ["development"],
+                    "tags": [{"key": "key-test", "value": "value-test"}],
+                }
+            }
+        }
+        project["attributes"] = {**project["attributes"], **body["data"]["attributes"]}
         requests_mock.patch(matcher, json=project, status_code=200)
 
-        response = rest_client.patch(f"orgs/{REST_ORG}/projects/{project['id']}", body=project)
+        response = rest_client.patch(
+            f"orgs/{REST_ORG}/projects/{project['id']}", body=project
+        )
 
+        response_data = response.json()
         assert response.status_code == 200
-        assert response.json()
+        assert response_data == project
+
+    def test_patch_update_project_when_invalid_should_throw_exception(
+        self, requests_mock, rest_client
+    ):
+        matcher = re.compile("projects/f9fec29a-d288-40d9-a019-cedf825e6efb")
+        body = {"attributes": {"environment": ["backend"]}}
+
+        requests_mock.patch(matcher, json=body, status_code=400)
+        with pytest.raises(SnykError):
+            rest_client.patch(
+                f"orgs/{REST_ORG}/projects/f9fec29a-d288-40d9-a019-cedf825e6efb",
+                body=body,
+            )
+
+        assert requests_mock.call_count == 1
