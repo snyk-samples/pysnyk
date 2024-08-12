@@ -194,8 +194,8 @@ class TestSnykClient(object):
         matcher = re.compile("projects.*$")
         requests_mock.get(matcher, json=projects)
         assert (
-            "testing-new-name"
-            == client.projects.get("f9fec29a-d288-40d9-a019-cedf825e6efb").name
+                "testing-new-name"
+                == client.projects.get("f9fec29a-d288-40d9-a019-cedf825e6efb").name
         )
 
     def test_non_existent_project(self, requests_mock, client, organizations, projects):
@@ -259,12 +259,12 @@ class TestSnykClient(object):
         assert len(targets["data"]) == 10
 
     def test_get_v3_pages(
-        self,
-        requests_mock,
-        v3_client,
-        v3_targets_page1,
-        v3_targets_page2,
-        v3_targets_page3,
+            self,
+            requests_mock,
+            v3_client,
+            v3_targets_page1,
+            v3_targets_page2,
+            v3_targets_page3,
     ):
         requests_mock.get(
             f"{V3_URL}/orgs/{V3_ORG}/targets?limit=10&version={V3_VERSION}",
@@ -296,12 +296,12 @@ class TestSnykClient(object):
         assert len(targets["data"]) == 10
 
     def test_get_rest_pages(
-        self,
-        requests_mock,
-        rest_client,
-        rest_targets_page1,
-        rest_targets_page2,
-        rest_targets_page3,
+            self,
+            requests_mock,
+            rest_client,
+            rest_targets_page1,
+            rest_targets_page2,
+            rest_targets_page3,
     ):
         requests_mock.get(
             f"{REST_URL}/orgs/{REST_ORG}/targets?limit=10&version={REST_VERSION}",
@@ -328,6 +328,15 @@ class TestSnykClient(object):
         params = {"limit": 10}
         rest_client.get(f"orgs/{REST_ORG}/projects?limit=100", params)
 
-    def test_patch_update_project_and_raises_error(self, requests_mock, rest_client):
-        matcher = "projects/f9fec29a-d288-40d9-a019-cedf825e6efb"
-        requests_mock.patch("")
+    def test_patch_update_project_should_return_new_project(self, requests_mock, rest_client, projects):
+        matcher = re.compile("projects/f9fec29a-d288-40d9-a019-cedf825e6efb")
+        project = projects["data"][0]
+        project["attributes"]["tags"] = [{"key": "test_key", "value": "test_value"}]
+        project["attributes"]["environment"] = ["backend"]
+        project["attributes"]["lifecycle"] = ["development"]
+        requests_mock.patch(matcher, json=project, status_code=200)
+
+        response = rest_client.patch(f"orgs/{REST_ORG}/projects/{project['id']}", body=project)
+
+        assert response.status_code == 200
+        assert response.json()
