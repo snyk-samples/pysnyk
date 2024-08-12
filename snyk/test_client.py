@@ -347,7 +347,9 @@ class TestSnykClient(object):
         requests_mock.patch(matcher, json=project, status_code=200)
 
         response = rest_client.patch(
-            f"orgs/{REST_ORG}/projects/{project['id']}", body=project
+            f"orgs/{REST_ORG}/projects/{project['id']}",
+            body=project,
+            params={"expand": "target"},
         )
 
         response_data = response.json()
