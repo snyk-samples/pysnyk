@@ -108,15 +108,26 @@ class SnykClient(object):
         return resp
 
     def patch(
-        self, path: str, body: Dict[str, Any], headers: Dict[str, str] = {}
+        self,
+        path: str,
+        body: Dict[str, Any],
+        headers: Dict[str, str] = {},
+        params: Dict[str, Any] = {},
     ) -> requests.Response:
         url = f"{self.rest_api_url}/{path}"
         logger.debug(f"PATCH: {url}")
 
+        if "version" not in params:
+            params["version"] = self.version if self.version else "2024-06-21"
+
         resp = retry_call(
             self.request,
             fargs=[requests.patch, url],
-            fkwargs={"json": body, "headers": {**self.api_post_headers, **headers}},
+            fkwargs={
+                "json": body,
+                "headers": {**self.api_post_headers, **headers},
+                "params": params,
+            },
             tries=self.tries,
             delay=self.delay,
             backoff=self.backoff,

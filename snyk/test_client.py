@@ -13,7 +13,7 @@ TEST_DATA = os.path.join(os.path.dirname(__file__), "test_data")
 
 REST_ORG = "39ddc762-b1b9-41ce-ab42-defbe4575bd6"
 REST_URL = "https://api.snyk.io/rest"
-REST_VERSION = "2022-02-16~experimental"
+REST_VERSION = "2024-06-21"
 
 V3_ORG = "39ddc762-b1b9-41ce-ab42-defbe4575bd6"
 V3_URL = "https://api.snyk.io/v3"
@@ -207,9 +207,7 @@ class TestSnykClient(object):
 
     @pytest.fixture
     def rest_client(self):
-        return SnykClient(
-            "token", version="2022-02-16~experimental", url="https://api.snyk.io/rest"
-        )
+        return SnykClient("token", version="2024-06-21", url="https://api.snyk.io/rest")
 
     @pytest.fixture
     def v3_client(self):
@@ -329,3 +327,7 @@ class TestSnykClient(object):
         )
         params = {"limit": 10}
         rest_client.get(f"orgs/{REST_ORG}/projects?limit=100", params)
+
+    def test_patch_update_project_and_raises_error(self, requests_mock, rest_client):
+        matcher = "projects/f9fec29a-d288-40d9-a019-cedf825e6efb"
+        requests_mock.patch("")
