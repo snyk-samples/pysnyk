@@ -46,28 +46,22 @@ class TestOrganization(TestModels):
     @pytest.fixture
     def project(self):
         return {
-            "data": {
-                "id": "6d5813be-7e6d-4ab8-80c2-1e3e2a454545",
-                "attributes": {
-                    "name": "atokeneduser/goof",
-                    "created": "2018-10-29T09:50:54.014Z",
-                    "origin": "cli",
-                    "type": "npm",
-                    "readOnly": "false",
-                    "testFrequency": "daily",
-                    "lastTestedDate": "2023-01-13T09:50:54.014Z",
-                    "isMonitored": "true",
-                    "tags": [{"key": "some-key", "value": "some-value"}],
-                },
-                "meta": {
-                    "latest_issue_counts": {
-                        "critical": 1,
-                        "low": 8,
-                        "high": 13,
-                        "medium": 15,
-                    }
-                },
-            }
+            "name": "atokeneduser/goof",
+            "id": "6d5813be-7e6d-4ab8-80c2-1e3e2a454545",
+            "created": "2018-10-29T09:50:54.014Z",
+            "origin": "cli",
+            "type": "npm",
+            "readOnly": "false",
+            "testFrequency": "daily",
+            "lastTestedDate": "2023-01-13T09:50:54.014Z",
+            "isMonitored": "true",
+            "issueCountsBySeverity": {
+                "critical": 1,
+                "low": 8,
+                "high": 13,
+                "medium": 15,
+            },
+            "tags": [{"key": "some-key", "value": "some-value"}],
         }
 
     @pytest.fixture
@@ -281,7 +275,7 @@ class TestOrganization(TestModels):
         assert organization.invite("example@example.com", admin=True)
 
     def test_get_project(self, organization, project, requests_mock):
-        matcher = re.compile("projects/6d5813be-7e6d-4ab8-80c2-1e3e2a454545")
+        matcher = re.compile("project/6d5813be-7e6d-4ab8-80c2-1e3e2a454545$")
         requests_mock.get(matcher, json=project)
         assert (
             "atokeneduser/goof"
@@ -291,7 +285,7 @@ class TestOrganization(TestModels):
     def test_get_project_organization_has_client(
         self, organization, project, requests_mock
     ):
-        matcher = re.compile("projects/6d5813be-7e6d-4ab8-80c2-1e3e2a454545")
+        matcher = re.compile("project/6d5813be-7e6d-4ab8-80c2-1e3e2a454545$")
         requests_mock.get(matcher, json=project)
         assert (
             organization.projects.get(
@@ -328,7 +322,7 @@ class TestOrganization(TestModels):
         assert organization.projects.filter() == []
 
     def test_tags_cache(self, organization, project, requests_mock):
-        matcher = re.compile("projects/6d5813be-7e6d-4ab8-80c2-1e3e2a454545")
+        matcher = re.compile("project/6d5813be-7e6d-4ab8-80c2-1e3e2a454545$")
         requests_mock.get(matcher, json=project)
         assert organization.projects.get(
             "6d5813be-7e6d-4ab8-80c2-1e3e2a454545"
@@ -337,7 +331,7 @@ class TestOrganization(TestModels):
     def test_get_organization_project_has_tags(
         self, organization, project, requests_mock
     ):
-        matcher = re.compile("projects/6d5813be-7e6d-4ab8-80c2-1e3e2a454545")
+        matcher = re.compile("project/6d5813be-7e6d-4ab8-80c2-1e3e2a454545$")
         requests_mock.get(matcher, json=project)
         assert organization.projects.get(
             "6d5813be-7e6d-4ab8-80c2-1e3e2a454545"
