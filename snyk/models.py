@@ -804,25 +804,3 @@ class Project(DataClassJSONMixin):
             # versions, emulate that here to preserve upstream api
             for version in issue.pkgVersions
         ]
-
-
-class V1ToRestConversion:
-    def __init__(self, v1_path, rest_path, v1_verb, rest_verb):
-        self.v1_path = v1_path
-        self.rest_path = rest_path
-        self.v1_verb = v1_verb
-        self.rest_verb = rest_verb
-
-
-class ProjectV1ToRestConversion:
-    def convert_delete_request(self):
-        pass
-
-    def convert_add_tag_request(self, body: Dict[str, Any]):
-        pass
-
-    def convert_delete_tag_request(self, body: Dict[str, Any]):
-        pass
-
-    def convert_apply_attributes_request(self, body: Dict[str, Any]):
-        pass
