@@ -86,14 +86,28 @@ class SnykClient(object):
             raise SnykHTTPError(resp)
         return resp
 
-    def post(self, path: str, body: Any, headers: dict = {}) -> requests.Response:
-        url = f"{self.api_url}/{path}"
+    def post(
+        self,
+        path: str,
+        body: Any,
+        headers: dict = {},
+        params: Dict[str, Any] = {},
+        use_rest: bool = False,
+    ) -> requests.Response:
+        url = f"{self.rest_api_url if use_rest else self.api_url}/{path}"
         logger.debug(f"POST: {url}")
+
+        if use_rest and "version" not in params:
+            params["version"] = self.version if self.version else "2024-06-21"
 
         resp = retry_call(
             self.request,
             fargs=[requests.post, url],
-            fkwargs={"json": body, "headers": {**self.api_post_headers, **headers}},
+            fkwargs={
+                "json": body,
+                "headers": {**self.api_post_headers, **headers},
+                "params": params,
+            },
             tries=self.tries,
             delay=self.delay,
             backoff=self.backoff,
@@ -140,14 +154,31 @@ class SnykClient(object):
 
         return resp
 
-    def put(self, path: str, body: Any, headers: dict = {}) -> requests.Response:
-        url = "%s/%s" % (self.api_url, path)
+    def put(
+        self,
+        path: str,
+        body: Any,
+        headers: dict = {},
+        params: Dict[str, Any] = {},
+        use_rest: bool = False,
+    ) -> requests.Response:
+        url = "%s/%s" % (
+            self.rest_api_url if use_rest else self.api_url,
+            path,
+        )
         logger.debug("PUT: %s" % url)
+
+        if use_rest and "version" not in params:
+            params["version"] = self.version if self.version else "2024-06-21"
 
         resp = retry_call(
             self.request,
             fargs=[requests.put, url],
-            fkwargs={"json": body, "headers": {**self.api_post_headers, **headers}},
+            fkwargs={
+                "json": body,
+                "headers": {**self.api_post_headers, **headers},
+                "params": params,
+            },
             tries=self.tries,
             delay=self.delay,
             backoff=self.backoff,

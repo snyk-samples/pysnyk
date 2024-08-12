@@ -368,3 +368,33 @@ class TestSnykClient(object):
             )
 
         assert requests_mock.call_count == 1
+
+    def test_post_request_rest_api(self, requests_mock, rest_client):
+        matcher = re.compile(
+            f"{REST_URL}/orgs/{REST_ORG}/projects/f9fec29a-d288-40d9-a019-cedf825e6efb\\?version={REST_VERSION}$"
+        )
+        requests_mock.post(matcher, json={}, status_code=200)
+        params = {"version": REST_VERSION}
+        rest_client.post(
+            f"{REST_URL}/orgs/{REST_ORG}/projects/f9fec29a-d288-40d9-a019-cedf825e6efb",
+            body={},
+            params=params,
+            use_rest=True,
+        )
+
+        assert requests_mock.call_count == 1
+
+    def test_put_request_rest_api(self, requests_mock, rest_client):
+        matcher = re.compile(
+            f"{REST_URL}/orgs/{REST_ORG}/projects/f9fec29a-d288-40d9-a019-cedf825e6efb\\?version={REST_VERSION}$"
+        )
+        requests_mock.put(matcher, json={}, status_code=200)
+        params = {"version": REST_VERSION}
+        rest_client.put(
+            f"{REST_URL}/orgs/{REST_ORG}/projects/f9fec29a-d288-40d9-a019-cedf825e6efb",
+            body={},
+            params=params,
+            use_rest=True,
+        )
+
+        assert requests_mock.call_count == 1
