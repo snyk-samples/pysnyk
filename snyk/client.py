@@ -1,7 +1,7 @@
 import logging
 import re
 import urllib.parse
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 from urllib.parse import parse_qs, urlparse
 
 import requests
@@ -98,6 +98,28 @@ class SnykClient(object):
             delay=self.delay,
             backoff=self.backoff,
             exceptions=SnykHTTPError,
+            logger=logger,
+        )
+
+        if not resp.ok:
+            logger.error(resp.text)
+            raise SnykHTTPError(resp)
+
+        return resp
+
+    def patch(
+        self, path: str, body: Dict[str, Any], headers: Dict[str, str] = {}
+    ) -> requests.Response:
+        url = f"{self.rest_api_url}/{path}"
+        logger.debug(f"PATCH: {url}")
+
+        resp = retry_call(
+            self.request,
+            fargs=[requests.patch, url],
+            fkwargs={"json": body, "headers": {**self.api_post_headers, **headers}},
+            tries=self.tries,
+            delay=self.delay,
+            backoff=self.backoff,
             logger=logger,
         )
 
