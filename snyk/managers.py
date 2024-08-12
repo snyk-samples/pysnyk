@@ -255,22 +255,25 @@ class ProjectManager(Manager):
 
     def get(self, id: str):
         if self.instance:
-            path = "org/%s/project/%s" % (self.instance.id, id)
-            resp = self.client.get(path)
-            project_data = resp.json()
-            project_data["organization"] = self.instance.to_dict()
-            # We move tags to _tags as a cache, to avoid the need for additional requests
-            # when working with tags. We want tags to be the manager
-            try:
-                project_data["_tags"] = project_data["tags"]
-                del project_data["tags"]
-            except KeyError:
-                pass
-            if project_data.get("totalDependencies") is None:
-                project_data["totalDependencies"] = 0
-            project_klass = self.klass.from_dict(project_data)
-            project_klass.organization = self.instance
-            return project_klass
+            path = "orgs/%s/projects/%s" % (self.instance.id, id)
+            params = {"expand": "target", "meta.latest_issue_counts": "true"}
+            resp = self.client.get(path, version="2024-06-21", params=params)
+            response_json = resp.json()
+            if "data" in response_json:
+                project_data = self._rest_to_v1_response_format(response_json["data"])
+                project_data["organization"] = self.instance.to_dict()
+                # We move tags to _tags as a cache, to avoid the need for additional requests
+                # when working with tags. We want tags to be the manager
+                try:
+                    project_data["_tags"] = project_data["tags"]
+                    del project_data["tags"]
+                except KeyError:
+                    pass
+                if project_data.get("totalDependencies") is None:
+                    project_data["totalDependencies"] = 0
+                project_klass = self.klass.from_dict(project_data)
+                project_klass.organization = self.instance
+                return project_klass
         else:
             return super().get(id)
 
