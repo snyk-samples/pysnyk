@@ -230,7 +230,6 @@ class SnykClient(object):
             url = f"{self.rest_api_url}/{path}"
         else:
             url = f"{self.api_url}/{path}"
-        # url = f"{self.api_url}/{path}"
 
         logger.debug(f"DELETE: {url}")
 
