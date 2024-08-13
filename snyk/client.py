@@ -1,7 +1,8 @@
+import copy
 import logging
 import re
 import urllib.parse
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Pattern
 from urllib.parse import parse_qs, urlparse
 
 import requests
@@ -41,8 +42,10 @@ class SnykClient(object):
             "Authorization": "token %s" % self.api_token,
             "User-Agent": user_agent,
         }
-        self.api_post_headers = self.api_headers
+        self.api_post_headers = copy.deepcopy(self.api_headers)
         self.api_post_headers["Content-Type"] = "application/json"
+        self.api_patch_headers = copy.deepcopy(self.api_headers)
+        self.api_patch_headers["Content-Type"] = "application/vnd.api+json"
         self.tries = tries
         self.backoff = backoff
         self.delay = delay
@@ -139,7 +142,7 @@ class SnykClient(object):
             fargs=[requests.patch, url],
             fkwargs={
                 "json": body,
-                "headers": {**self.api_post_headers, **headers},
+                "headers": {**self.api_patch_headers, **headers},
                 "params": params,
             },
             tries=self.tries,
@@ -370,8 +373,8 @@ class SnykClient(object):
         raise SnykNotImplementedError  # pragma: no cover
 
     def __is_v1_project_path(self, path: str) -> bool:
-        v1_paths: List[str] = [
-            rf"org/{self.__uuid_pattern}/project/{self.__uuid_pattern}/?"
+        v1_paths: List[Pattern[str]] = [
+            re.compile(f"^org/{self.__uuid_pattern}/project/{self.__uuid_pattern}$")
         ]
 
         for v1_path in v1_paths:

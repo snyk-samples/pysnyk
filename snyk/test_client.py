@@ -331,8 +331,10 @@ class TestSnykClient(object):
     def test_patch_update_project_should_return_new_project(
         self, requests_mock, rest_client, projects
     ):
-        matcher = re.compile("projects/f9fec29a-d288-40d9-a019-cedf825e6efb")
         project = projects["data"][0]
+        matcher = re.compile(
+            f"orgs/{REST_ORG}/projects/{project['id']}\\?([^&=]+=[^&=]+&?)+$"
+        )
         body = {
             "data": {
                 "attributes": {
@@ -356,10 +358,28 @@ class TestSnykClient(object):
         assert response.status_code == 200
         assert response_data == project
 
+    def test_token_added_to_patch_headers(self, client):
+        assert client.api_patch_headers["Authorization"] == "token token"
+
+    def test_patch_headers_use_correct_mimetype(self, client):
+        assert client.api_patch_headers["Content-Type"] == "application/vnd.api+json"
+
+    def test_patch_has_version_in_query_params(self, client, requests_mock):
+        matcher = re.compile("\\?version=2[0-9]{3}-[0-9]{2}-[0-9]{2}$")
+        requests_mock.patch(matcher, json={}, status_code=200)
+        client.patch(
+            f"{REST_URL}/orgs/{REST_ORG}/projects/f9fec29a-d288-40d9-a019-cedf825e6efb",
+            body={},
+        )
+
+        assert requests_mock.call_count == 1
+
     def test_patch_update_project_when_invalid_should_throw_exception(
         self, requests_mock, rest_client
     ):
-        matcher = re.compile("projects/f9fec29a-d288-40d9-a019-cedf825e6efb")
+        matcher = re.compile(
+            "projects/f9fec29a-d288-40d9-a019-cedf825e6efb\\?version=2[0-9]{3}-[0-9]{2}-[0-9]{2}$"
+        )
         body = {"attributes": {"environment": ["backend"]}}
 
         requests_mock.patch(matcher, json=body, status_code=400)
@@ -371,7 +391,7 @@ class TestSnykClient(object):
 
         assert requests_mock.call_count == 1
 
-    def test_post_request_rest_api(self, requests_mock, rest_client):
+    def test_post_request_rest_api_when_specified(self, requests_mock, rest_client):
         matcher = re.compile(
             f"{REST_URL}/orgs/{REST_ORG}/projects/f9fec29a-d288-40d9-a019-cedf825e6efb\\?version={REST_VERSION}$"
         )
@@ -386,7 +406,7 @@ class TestSnykClient(object):
 
         assert requests_mock.call_count == 1
 
-    def test_put_request_rest_api(self, requests_mock, rest_client):
+    def test_put_request_rest_api_when_specified(self, requests_mock, rest_client):
         matcher = re.compile(
             f"{REST_URL}/orgs/{REST_ORG}/projects/f9fec29a-d288-40d9-a019-cedf825e6efb\\?version={REST_VERSION}$"
         )
@@ -398,5 +418,20 @@ class TestSnykClient(object):
             params=params,
             use_rest=True,
         )
+
+        assert requests_mock.call_count == 1
+
+    def test_delete_redirects_to_rest_api_for_delete_project(
+        self, client, requests_mock, projects
+    ):
+        project = projects["data"][0]
+        matcher = re.compile(
+            "orgs/%s/projects/%s\\?version=2[0-9]{3}-[0-9]{2}-[0-9]{2}$"
+            % (REST_ORG, project["id"])
+        )
+
+        requests_mock.delete(matcher, json={}, status_code=200)
+
+        client.delete(f"org/{REST_ORG}/project/{project['id']}")
 
         assert requests_mock.call_count == 1
