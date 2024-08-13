@@ -328,7 +328,7 @@ class TestSnykClient(object):
         params = {"limit": 10}
         rest_client.get(f"orgs/{REST_ORG}/projects?limit=100", params)
 
-    def test_patch_update_project_should_return_new_project(
+    def test_patch_update_project_should_return_updated_project(
         self, requests_mock, rest_client, projects
     ):
         project = projects["data"][0]
