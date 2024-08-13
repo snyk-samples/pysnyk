@@ -267,21 +267,26 @@ class SnykClient(object):
 
         return resp
 
-    def delete(self, path: str) -> requests.Response:
+    def delete(self, path: str, use_rest: bool = False) -> requests.Response:
         is_v1_project_path: bool = self.__is_v1_project_path(path)
         if is_v1_project_path:
             ids = re.findall(rf"{self.__uuid_pattern}", path)
-            path = f"orgs/{ids[0]}/projects/{ids[1]}?version={self.version if self.version else '2024-06-21'}"
+            path = f"orgs/{ids[0]}/projects/{ids[1]}"
             url = f"{self.rest_api_url}/{path}"
+            use_rest = True
         else:
-            url = f"{self.api_url}/{path}"
+            url = f"{self.rest_api_url if use_rest else self.api_url}/{path}"
+
+        params = {}
+        if use_rest:
+            params["version"] = self.version if self.version else "2024-06-21"
 
         logger.debug(f"DELETE: {url}")
 
         resp = retry_call(
             self.request,
             fargs=[requests.delete, url],
-            fkwargs={"headers": self.api_headers},
+            fkwargs={"headers": self.api_headers, "params": params},
             tries=self.tries,
             delay=self.delay,
             backoff=self.backoff,

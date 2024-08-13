@@ -391,13 +391,13 @@ class TestSnykClient(object):
 
         assert requests_mock.call_count == 1
 
-    def test_post_request_rest_api_when_specified(self, requests_mock, rest_client):
+    def test_post_request_rest_api_when_specified(self, requests_mock, client):
         matcher = re.compile(
             f"{REST_URL}/orgs/{REST_ORG}/projects/f9fec29a-d288-40d9-a019-cedf825e6efb\\?version={REST_VERSION}$"
         )
         requests_mock.post(matcher, json={}, status_code=200)
         params = {"version": REST_VERSION}
-        rest_client.post(
+        client.post(
             f"{REST_URL}/orgs/{REST_ORG}/projects/f9fec29a-d288-40d9-a019-cedf825e6efb",
             body={},
             params=params,
@@ -406,19 +406,48 @@ class TestSnykClient(object):
 
         assert requests_mock.call_count == 1
 
-    def test_put_request_rest_api_when_specified(self, requests_mock, rest_client):
+    def test_put_request_rest_api_when_specified(self, requests_mock, client):
         matcher = re.compile(
             f"{REST_URL}/orgs/{REST_ORG}/projects/f9fec29a-d288-40d9-a019-cedf825e6efb\\?version={REST_VERSION}$"
         )
         requests_mock.put(matcher, json={}, status_code=200)
         params = {"version": REST_VERSION}
-        rest_client.put(
+        client.put(
             f"{REST_URL}/orgs/{REST_ORG}/projects/f9fec29a-d288-40d9-a019-cedf825e6efb",
             body={},
             params=params,
             use_rest=True,
         )
 
+        assert requests_mock.call_count == 1
+
+    def test_put_request_v1_api_when_specified(self, requests_mock, client):
+        matcher = re.compile(
+            f"^https://api.snyk.io/v1/org/{REST_ORG}/project/f9fec29a-d288-40d9-a019-cedf825e6efb"
+        )
+        requests_mock.put(matcher, json={}, status_code=200)
+        client.put(
+            f"org/{REST_ORG}/project/f9fec29a-d288-40d9-a019-cedf825e6efb",
+            body={},
+            use_rest=False,
+        )
+
+        assert requests_mock.call_count == 1
+
+    def test_delete_use_rest_when_specified(self, requests_mock, client):
+        matcher = re.compile(
+            "^%s/orgs/%s\\?version=2[0-9]{3}-[0-9]{2}-[0-9]{2}$" % (REST_URL, REST_ORG)
+        )
+        requests_mock.delete(matcher, json={}, status_code=200)
+
+        client.delete(f"orgs/{REST_ORG}", use_rest=True)
+        assert requests_mock.call_count == 1
+
+    def test_delete_use_v1_when_specified(self, requests_mock, client):
+        matcher = re.compile("^%s/orgs/%s" % ("https://api.snyk.io/v1", REST_ORG))
+        requests_mock.delete(matcher, json={}, status_code=200)
+
+        client.delete(f"orgs/{REST_ORG}")
         assert requests_mock.call_count == 1
 
     def test_delete_redirects_to_rest_api_for_delete_project(
