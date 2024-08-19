@@ -266,8 +266,7 @@ class ProjectManager(Manager):
             version = (
                 copy_params["version"] if "version" in copy_params else "2024-06-21"
             )
-            if "version" in copy_params:
-                del copy_params["version"]
+            copy_params.pop("version", None)
 
             path = "orgs/%s/projects/%s" % (self.instance.id, id)
             if "tags" in params:
