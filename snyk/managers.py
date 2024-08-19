@@ -257,13 +257,18 @@ class ProjectManager(Manager):
         return self.all(params=params)
 
     def get(self, id: str, params: Dict[str, Any] = {}):
-        copy_params = copy.deepcopy(params)
-        if "meta.latest_issue_counts" not in copy_params:
-            copy_params["meta.latest_issue_counts"] = "true"
-        if "expand" not in params:
-            copy_params["expand"] = "target"
-
         if self.instance:
+            copy_params = copy.deepcopy(params)
+            if "meta.latest_issue_counts" not in copy_params:
+                copy_params["meta.latest_issue_counts"] = "true"
+            if "expand" not in copy_params:
+                copy_params["expand"] = "target"
+            version = (
+                copy_params["version"] if "version" in copy_params else "2024-06-21"
+            )
+            if "version" in copy_params:
+                del copy_params["version"]
+
             path = "orgs/%s/projects/%s" % (self.instance.id, id)
             if "tags" in params:
                 for tag in params["tags"]:
@@ -272,10 +277,10 @@ class ProjectManager(Manager):
                 data = [f'{d["key"]}:{d["value"]}' for d in params["tags"]]
                 params["tags"] = ",".join(data)
 
-            resp = self.client.get(path, params=copy_params)
+            resp = self.client.get(path, params=copy_params, version=version)
             project_data = resp.json()
             if "data" in project_data:
-                project_data = project_data["data"]
+                project_data = self._rest_to_v1_response_format(project_data["data"])
                 project_data["organization"] = self.instance.to_dict()
                 # We move tags to _tags as a cache, to avoid the need for additional requests
                 # when working with tags. We want tags to be the manager
@@ -290,7 +295,10 @@ class ProjectManager(Manager):
                 project_klass.organization = self.instance
                 return project_klass
         else:
-            return super().get(id)
+            try:
+                return next(x for x in self.all(params=params) if x.id == id)
+            except StopIteration:
+                raise SnykNotFoundError
 
 
 class MemberManager(Manager):
@@ -428,9 +436,9 @@ class JiraIssueManager(DictManager):
         # The response we get is not following the schema as specified by the api
         # https://snyk.docs.apiary.io/#reference/projects/project-jira-issues-/create-jira-issue
         if (
-                issue_id in response_data
-                and len(response_data[issue_id]) > 0
-                and "jiraIssue" in response_data[issue_id][0]
+            issue_id in response_data
+            and len(response_data[issue_id]) > 0
+            and "jiraIssue" in response_data[issue_id][0]
         ):
             return response_data[issue_id][0]["jiraIssue"]
         raise SnykError
