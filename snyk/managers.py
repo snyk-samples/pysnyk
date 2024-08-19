@@ -222,8 +222,7 @@ class ProjectManager(Manager):
 
             if "data" in resp.json():
                 # Process projects in current response
-                for response_data in resp.json()["data"]:
-                    project_data = self._rest_to_v1_response_format(response_data)
+                for project_data in resp.json()["data"]:
                     project_data["organization"] = self.instance.to_dict()
                     try:
                         project_data["attributes"]["_tags"] = project_data[
@@ -232,8 +231,6 @@ class ProjectManager(Manager):
                         del project_data["attributes"]["tags"]
                     except KeyError:
                         pass
-                    if not project_data.get("totalDependencies"):
-                        project_data["totalDependencies"] = 0
                     projects.append(self.klass.from_dict(project_data))
 
                 # If we have another page, then process this page too
@@ -269,23 +266,24 @@ class ProjectManager(Manager):
             copy_params.pop("version", None)
 
             path = "orgs/%s/projects/%s" % (self.instance.id, id)
-            if "tags" in params:
-                for tag in params["tags"]:
+
+            if "tags" in copy_params:
+                for tag in copy_params["tags"]:
                     if "key" not in tag or "value" not in tag or len(tag.keys()) != 2:
                         raise SnykError("Each tag must contain only a key and a value")
-                data = [f'{d["key"]}:{d["value"]}' for d in params["tags"]]
-                params["tags"] = ",".join(data)
+                data = [f'{d["key"]}:{d["value"]}' for d in copy_params["tags"]]
+                copy_params["tags"] = ",".join(data)
 
             resp = self.client.get(path, params=copy_params, version=version)
             project_data = resp.json()
             if "data" in project_data:
-                project_data = self._rest_to_v1_response_format(project_data["data"])
+                project_data = project_data["data"]
                 project_data["organization"] = self.instance.to_dict()
                 # We move tags to _tags as a cache, to avoid the need for additional requests
                 # when working with tags. We want tags to be the manager
                 try:
-                    project_data["_tags"] = project_data["tags"]
-                    del project_data["tags"]
+                    project_data["_tags"] = project_data["attributes"]["tags"]
+                    del project_data["attributes"]["tags"]
                 except KeyError:
                     pass
                 # if project_data.get("totalDependencies") is None:
@@ -295,7 +293,7 @@ class ProjectManager(Manager):
                 return project_klass
         else:
             try:
-                return next(x for x in self.all(params=params) if x.id == id)
+                return next(x for x in self.all(params=params) if x.attributes.id == id)
             except StopIteration:
                 raise SnykNotFoundError
 
