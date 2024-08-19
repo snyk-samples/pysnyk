@@ -293,7 +293,7 @@ class ProjectManager(Manager):
                 return project_klass
         else:
             try:
-                return next(x for x in self.all(params=params) if x.attributes.id == id)
+                return next(x for x in self.all(params=params) if x.id == id)
             except StopIteration:
                 raise SnykNotFoundError
 
