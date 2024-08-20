@@ -175,15 +175,19 @@ class SnykClient(object):
         )
         logger.debug("PUT: %s" % url)
 
-        if use_rest and "version" not in params:
-            params["version"] = self.version or self.__latest_version
+        request_headers = {**self.api_post_headers, **headers}
+
+        if use_rest:
+            if "version" not in params:
+                params["version"] = self.version or self.__latest_version
+            request_headers["Content-Type"] = "application/vnd.api+json"
 
         resp = retry_call(
             self.request,
             fargs=[requests.put, url],
             fkwargs={
                 "json": body,
-                "headers": {**self.api_post_headers, **headers},
+                "headers": request_headers,
                 "params": params,
             },
             tries=self.tries,
