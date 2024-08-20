@@ -1,5 +1,4 @@
 import abc
-import json
 from typing import Any, Dict, List
 
 from deprecation import deprecated  # type: ignore

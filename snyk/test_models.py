@@ -24,8 +24,16 @@ class TestModels(object):
         return "https://api.snyk.io/v1"
 
     @pytest.fixture
+    def rest_base_url(self):
+        return "https://api.snyk.io/rest"
+
+    @pytest.fixture
     def organization_url(self, base_url, organization):
         return "%s/org/%s" % (base_url, organization.id)
+
+    @pytest.fixture
+    def organization_rest_url(self, rest_base_url, organization):
+        return "%s/orgs/%s" % (rest_base_url, organization.id)
 
 
 class TestOrganization(TestModels):
@@ -159,49 +167,42 @@ class TestOrganization(TestModels):
     def test_packagejson_test_with_file(
         self, organization, base_url, blank_test, fake_file, requests_mock
     ):
-
         requests_mock.post("%s/test/npm" % base_url, json=blank_test)
         assert organization.test_packagejson(fake_file)
 
     def test_packagejson_test_with_files(
         self, organization, base_url, blank_test, fake_file, requests_mock
     ):
-
         requests_mock.post("%s/test/npm" % base_url, json=blank_test)
         assert organization.test_packagejson(fake_file, fake_file)
 
     def test_gradlefile_test_with_file(
         self, organization, base_url, blank_test, fake_file, requests_mock
     ):
-
         requests_mock.post("%s/test/gradle" % base_url, json=blank_test)
         assert organization.test_gradlefile(fake_file)
 
     def test_sbt_test_with_file(
         self, organization, base_url, blank_test, fake_file, requests_mock
     ):
-
         requests_mock.post("%s/test/sbt" % base_url, json=blank_test)
         assert organization.test_sbt(fake_file)
 
     def test_pom_test_with_file(
         self, organization, base_url, blank_test, fake_file, requests_mock
     ):
-
         requests_mock.post("%s/test/maven" % base_url, json=blank_test)
         assert organization.test_pom(fake_file)
 
     def test_composer_with_files(
         self, organization, base_url, blank_test, fake_file, requests_mock
     ):
-
         requests_mock.post("%s/test/composer" % base_url, json=blank_test)
         assert organization.test_composer(fake_file, fake_file)
 
     def test_yarn_with_files(
         self, organization, base_url, blank_test, fake_file, requests_mock
     ):
-
         requests_mock.post("%s/test/yarn" % base_url, json=blank_test)
         assert organization.test_yarn(fake_file, fake_file)
 
@@ -358,12 +359,16 @@ class TestProject(TestModels):
     def project_url(self, organization_url, project):
         return "%s/project/%s" % (organization_url, project.id)
 
-    def test_delete(self, project, project_url, requests_mock):
-        requests_mock.delete(project_url)
+    @pytest.fixture
+    def project_rest_url(self, organization_rest_url, project):
+        return "%s/projects/%s" % (organization_rest_url, project.id)
+
+    def test_delete(self, project, project_rest_url, requests_mock):
+        requests_mock.delete(project_rest_url)
         assert project.delete()
 
-    def test_failed_delete(self, project, project_url, requests_mock):
-        requests_mock.delete(project_url, status_code=500)
+    def test_failed_delete(self, project, project_rest_url, requests_mock):
+        requests_mock.delete(project_rest_url, status_code=500)
         with pytest.raises(SnykError):
             project.delete()
 

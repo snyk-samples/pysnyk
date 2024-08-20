@@ -1,6 +1,8 @@
+import copy
 import logging
+import re
 import urllib.parse
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional, Pattern
 from urllib.parse import parse_qs, urlparse
 
 import requests
@@ -40,13 +42,19 @@ class SnykClient(object):
             "Authorization": "token %s" % self.api_token,
             "User-Agent": user_agent,
         }
-        self.api_post_headers = self.api_headers
+        self.api_post_headers = dict(self.api_headers)
         self.api_post_headers["Content-Type"] = "application/json"
+        self.api_patch_headers = dict(self.api_headers)
+        self.api_patch_headers["Content-Type"] = "application/vnd.api+json"
         self.tries = tries
         self.backoff = backoff
         self.delay = delay
         self.verify = verify
         self.version = version
+        self.__uuid_pattern = (
+            r"[0-9a-f]{8}-[0-9a-f]{4}-[4][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
+        )
+        self.__latest_version = "2024-06-21"
 
         # Ensure we don't have a trailing /
         if self.api_url[-1] == "/":
@@ -82,14 +90,31 @@ class SnykClient(object):
             raise SnykHTTPError(resp)
         return resp
 
-    def post(self, path: str, body: Any, headers: dict = {}) -> requests.Response:
-        url = f"{self.api_url}/{path}"
+    def post(
+        self,
+        path: str,
+        body: Dict[str, Any],
+        headers: Dict = {},
+        params: Dict[str, Any] = {},
+        use_rest: bool = False,
+    ) -> requests.Response:
+        url = f"{self.rest_api_url if use_rest else self.api_url}/{path}"
         logger.debug(f"POST: {url}")
+
+        request_headers = {**self.api_post_headers, **headers}
+        if use_rest:
+            if "version" not in params:
+                params["version"] = self.version or self.__latest_version
+            request_headers["Content-Type"] = "application/vnd.api+json"
 
         resp = retry_call(
             self.request,
             fargs=[requests.post, url],
-            fkwargs={"json": body, "headers": {**self.api_post_headers, **headers}},
+            fkwargs={
+                "json": body,
+                "headers": request_headers,
+                "params": params,
+            },
             tries=self.tries,
             delay=self.delay,
             backoff=self.backoff,
@@ -103,14 +128,68 @@ class SnykClient(object):
 
         return resp
 
-    def put(self, path: str, body: Any, headers: dict = {}) -> requests.Response:
-        url = "%s/%s" % (self.api_url, path)
+    def patch(
+        self,
+        path: str,
+        body: Dict[str, Any],
+        headers: Dict[str, str] = {},
+        params: Dict[str, Any] = {},
+    ) -> requests.Response:
+        url = f"{self.rest_api_url}/{path}"
+        logger.debug(f"PATCH: {url}")
+
+        if "version" not in params:
+            params["version"] = self.version or self.__latest_version
+
+        resp = retry_call(
+            self.request,
+            fargs=[requests.patch, url],
+            fkwargs={
+                "json": body,
+                "headers": {**self.api_patch_headers, **headers},
+                "params": params,
+            },
+            tries=self.tries,
+            delay=self.delay,
+            backoff=self.backoff,
+            logger=logger,
+        )
+
+        if not resp.ok:
+            logger.error(resp.text)
+            raise SnykHTTPError(resp)
+
+        return resp
+
+    def put(
+        self,
+        path: str,
+        body: Any,
+        headers: Dict = {},
+        params: Dict[str, Any] = {},
+        use_rest: bool = False,
+    ) -> requests.Response:
+        url = "%s/%s" % (
+            self.rest_api_url if use_rest else self.api_url,
+            path,
+        )
         logger.debug("PUT: %s" % url)
+
+        request_headers = {**self.api_post_headers, **headers}
+
+        if use_rest:
+            if "version" not in params:
+                params["version"] = self.version or self.__latest_version
+            request_headers["Content-Type"] = "application/vnd.api+json"
 
         resp = retry_call(
             self.request,
             fargs=[requests.put, url],
-            fkwargs={"json": body, "headers": {**self.api_post_headers, **headers}},
+            fkwargs={
+                "json": body,
+                "headers": request_headers,
+                "params": params,
+            },
             tries=self.tries,
             delay=self.delay,
             backoff=self.backoff,
@@ -125,7 +204,7 @@ class SnykClient(object):
     def get(
         self,
         path: str,
-        params: dict = None,
+        params: Dict = None,
         version: str = None,
         exclude_version: bool = False,
         exclude_params: bool = False,
@@ -196,14 +275,26 @@ class SnykClient(object):
 
         return resp
 
-    def delete(self, path: str) -> requests.Response:
-        url = f"{self.api_url}/{path}"
+    def delete(self, path: str, use_rest: bool = False) -> requests.Response:
+        is_v1_project_path: bool = self.__is_v1_project_path(path)
+        if is_v1_project_path:
+            ids = re.findall(rf"{self.__uuid_pattern}", path)
+            path = f"orgs/{ids[0]}/projects/{ids[1]}"
+            url = f"{self.rest_api_url}/{path}"
+            use_rest = True
+        else:
+            url = f"{self.rest_api_url if use_rest else self.api_url}/{path}"
+
+        params = {}
+        if use_rest:
+            params["version"] = self.version or self.__latest_version
+
         logger.debug(f"DELETE: {url}")
 
         resp = retry_call(
             self.request,
             fargs=[requests.delete, url],
-            fkwargs={"headers": self.api_headers},
+            fkwargs={"headers": self.api_headers, "params": params},
             tries=self.tries,
             delay=self.delay,
             backoff=self.backoff,
@@ -215,7 +306,7 @@ class SnykClient(object):
 
         return resp
 
-    def get_rest_pages(self, path: str, params: dict = {}) -> List:
+    def get_rest_pages(self, path: str, params: Dict = {}) -> List:
         """
         Helper function to collect paginated responses from the rest API into a single
         list.
@@ -293,3 +384,14 @@ class SnykClient(object):
     # https://snyk.docs.apiary.io/#reference/reporting-api/issues/get-list-of-issues
     def issues(self):
         raise SnykNotImplementedError  # pragma: no cover
+
+    def __is_v1_project_path(self, path: str) -> bool:
+        v1_paths: List[Pattern[str]] = [
+            re.compile(f"^org/{self.__uuid_pattern}/project/{self.__uuid_pattern}$")
+        ]
+
+        for v1_path in v1_paths:
+            if re.match(v1_path, path):
+                return True
+
+        return False

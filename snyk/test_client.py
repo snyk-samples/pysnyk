@@ -13,11 +13,13 @@ TEST_DATA = os.path.join(os.path.dirname(__file__), "test_data")
 
 REST_ORG = "39ddc762-b1b9-41ce-ab42-defbe4575bd6"
 REST_URL = "https://api.snyk.io/rest"
-REST_VERSION = "2022-02-16~experimental"
+REST_VERSION = "2024-06-21"
 
 V3_ORG = "39ddc762-b1b9-41ce-ab42-defbe4575bd6"
 V3_URL = "https://api.snyk.io/v3"
 V3_VERSION = "2022-02-16~experimental"
+
+V1_URL = "https://api.snyk.io/v1"
 
 
 class TestSnykClient(object):
@@ -207,9 +209,7 @@ class TestSnykClient(object):
 
     @pytest.fixture
     def rest_client(self):
-        return SnykClient(
-            "token", version="2022-02-16~experimental", url="https://api.snyk.io/rest"
-        )
+        return SnykClient("token", version="2024-06-21", url="https://api.snyk.io/rest")
 
     @pytest.fixture
     def v3_client(self):
@@ -329,3 +329,212 @@ class TestSnykClient(object):
         )
         params = {"limit": 10}
         rest_client.get(f"orgs/{REST_ORG}/projects?limit=100", params)
+
+    def test_patch_update_project_should_return_updated_project(
+        self, requests_mock, rest_client, projects
+    ):
+        project = projects["data"][0]
+        matcher = re.compile(
+            f"^{REST_URL}/orgs/{REST_ORG}/projects/{project['id']}\\?([^&=]+=[^&=]+&?)+$"
+        )
+        body = {
+            "data": {
+                "attributes": {
+                    "business_criticality": ["critical"],
+                    "environment": ["backend", "internal"],
+                    "lifecycle": ["development"],
+                    "tags": [{"key": "key-test", "value": "value-test"}],
+                }
+            }
+        }
+        project["attributes"] = {**project["attributes"], **body["data"]["attributes"]}
+        requests_mock.patch(matcher, json=project, status_code=200)
+
+        response = rest_client.patch(
+            f"orgs/{REST_ORG}/projects/{project['id']}",
+            body=project,
+            params={"expand": "target"},
+        )
+
+        response_data = response.json()
+        assert response.status_code == 200
+        assert response_data == project
+
+    def test_token_added_to_patch_headers(self, client):
+        assert client.api_patch_headers["Authorization"] == "token token"
+
+    def test_patch_headers_use_correct_mimetype(self, client):
+        assert client.api_patch_headers["Content-Type"] == "application/vnd.api+json"
+
+    def test_patch_has_version_in_query_params(self, client, requests_mock):
+        matcher = re.compile("\\?version=2[0-9]{3}-[0-9]{2}-[0-9]{2}$")
+        requests_mock.patch(matcher, json={}, status_code=200)
+        client.patch(
+            f"{REST_URL}/orgs/{REST_ORG}/projects/f9fec29a-d288-40d9-a019-cedf825e6efb",
+            body={},
+        )
+
+        assert requests_mock.call_count == 1
+
+    def test_patch_update_project_when_invalid_should_throw_exception(
+        self, requests_mock, rest_client
+    ):
+        matcher = re.compile(
+            "projects/f9fec29a-d288-40d9-a019-cedf825e6efb\\?version=2[0-9]{3}-[0-9]{2}-[0-9]{2}$"
+        )
+        body = {"attributes": {"environment": ["backend"]}}
+
+        requests_mock.patch(matcher, json=body, status_code=400)
+        with pytest.raises(SnykError):
+            rest_client.patch(
+                f"orgs/{REST_ORG}/projects/f9fec29a-d288-40d9-a019-cedf825e6efb",
+                body=body,
+            )
+
+        assert requests_mock.call_count == 1
+
+    def test_post_request_rest_api_when_specified(self, requests_mock, client):
+        matcher = re.compile(
+            f"^{REST_URL}/orgs/{REST_ORG}/projects/f9fec29a-d288-40d9-a019-cedf825e6efb\\?version={REST_VERSION}$"
+        )
+        requests_mock.post(matcher, json={}, status_code=200)
+        params = {"version": REST_VERSION}
+        client.post(
+            f"orgs/{REST_ORG}/projects/f9fec29a-d288-40d9-a019-cedf825e6efb",
+            body={},
+            params=params,
+            use_rest=True,
+        )
+
+        assert requests_mock.call_count == 1
+
+    def test_post_request_has_rest_content_type_when_specified(
+        self, requests_mock, client
+    ):
+        matcher = re.compile(
+            f"^{REST_URL}/orgs/{REST_ORG}/projects/f9fec29a-d288-40d9-a019-cedf825e6efb\\?version={REST_VERSION}$"
+        )
+        requests_mock.post(matcher, json={}, status_code=200)
+        params = {"version": REST_VERSION}
+        client.post(
+            f"orgs/{REST_ORG}/projects/f9fec29a-d288-40d9-a019-cedf825e6efb",
+            body={},
+            params=params,
+            use_rest=True,
+        )
+
+        assert (
+            requests_mock.last_request.headers["Content-Type"]
+            == "application/vnd.api+json"
+        )
+
+    def test_post_request_has_v1_content_type_when_specified(
+        self, requests_mock, client
+    ):
+        matcher = re.compile(
+            f"^{V1_URL}/org/{REST_ORG}/project/f9fec29a-d288-40d9-a019-cedf825e6efb$"
+        )
+        requests_mock.post(matcher, json={}, status_code=200)
+
+        client.post(
+            f"org/{REST_ORG}/project/f9fec29a-d288-40d9-a019-cedf825e6efb",
+            body={},
+            use_rest=False,
+        )
+
+        assert requests_mock.last_request.headers["Content-Type"] == "application/json"
+
+    def test_put_request_rest_api_when_specified(self, requests_mock, client):
+        matcher = re.compile(
+            f"^{REST_URL}/orgs/{REST_ORG}/projects/f9fec29a-d288-40d9-a019-cedf825e6efb\\?version={REST_VERSION}$"
+        )
+        requests_mock.put(matcher, json={}, status_code=200)
+        params = {"version": REST_VERSION}
+        client.put(
+            f"orgs/{REST_ORG}/projects/f9fec29a-d288-40d9-a019-cedf825e6efb",
+            body={},
+            params=params,
+            use_rest=True,
+        )
+
+        assert requests_mock.call_count == 1
+
+    def test_put_request_v1_api_when_specified(self, requests_mock, client):
+        matcher = re.compile(
+            f"^{V1_URL}/org/{REST_ORG}/project/f9fec29a-d288-40d9-a019-cedf825e6efb"
+        )
+        requests_mock.put(matcher, json={}, status_code=200)
+        client.put(
+            f"org/{REST_ORG}/project/f9fec29a-d288-40d9-a019-cedf825e6efb",
+            body={},
+            use_rest=False,
+        )
+
+        assert requests_mock.call_count == 1
+
+    def test_put_request_has_rest_content_type_when_specified(
+        self, requests_mock, client
+    ):
+        matcher = re.compile(
+            f"^{REST_URL}/orgs/{REST_ORG}/projects/f9fec29a-d288-40d9-a019-cedf825e6efb\\?version={REST_VERSION}$"
+        )
+        requests_mock.put(matcher, json={}, status_code=200)
+        params = {"version": REST_VERSION}
+        client.put(
+            f"orgs/{REST_ORG}/projects/f9fec29a-d288-40d9-a019-cedf825e6efb",
+            body={},
+            params=params,
+            use_rest=True,
+        )
+
+        assert (
+            requests_mock.last_request.headers["Content-Type"]
+            == "application/vnd.api+json"
+        )
+
+    def test_put_request_has_v1_content_type_when_specified(
+        self, requests_mock, client
+    ):
+        matcher = re.compile(
+            f"^{V1_URL}/org/{REST_ORG}/project/f9fec29a-d288-40d9-a019-cedf825e6efb$"
+        )
+        requests_mock.put(matcher, json={}, status_code=200)
+
+        client.put(
+            f"org/{REST_ORG}/project/f9fec29a-d288-40d9-a019-cedf825e6efb",
+            body={},
+            use_rest=False,
+        )
+
+        assert requests_mock.last_request.headers["Content-Type"] == "application/json"
+
+    def test_delete_use_rest_when_specified(self, requests_mock, client):
+        matcher = re.compile(
+            "^%s/orgs/%s\\?version=2[0-9]{3}-[0-9]{2}-[0-9]{2}$" % (REST_URL, REST_ORG)
+        )
+        requests_mock.delete(matcher, json={}, status_code=200)
+
+        client.delete(f"orgs/{REST_ORG}", use_rest=True)
+        assert requests_mock.call_count == 1
+
+    def test_delete_use_v1_when_specified(self, requests_mock, client):
+        matcher = re.compile("^%s/orgs/%s" % ("https://api.snyk.io/v1", REST_ORG))
+        requests_mock.delete(matcher, json={}, status_code=200)
+
+        client.delete(f"orgs/{REST_ORG}")
+        assert requests_mock.call_count == 1
+
+    def test_delete_redirects_to_rest_api_for_delete_project(
+        self, client, requests_mock, projects
+    ):
+        project = projects["data"][0]
+        matcher = re.compile(
+            "orgs/%s/projects/%s\\?version=2[0-9]{3}-[0-9]{2}-[0-9]{2}$"
+            % (REST_ORG, project["id"])
+        )
+
+        requests_mock.delete(matcher, json={}, status_code=200)
+
+        client.delete(f"org/{REST_ORG}/project/{project['id']}")
+
+        assert requests_mock.call_count == 1
