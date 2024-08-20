@@ -93,7 +93,7 @@ class SnykClient(object):
     def post(
         self,
         path: str,
-        body: Any,
+        body: Dict[str, Any],
         headers: Dict = {},
         params: Dict[str, Any] = {},
         use_rest: bool = False,
