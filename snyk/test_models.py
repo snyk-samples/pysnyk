@@ -354,18 +354,115 @@ class TestOrganization(TestModels):
 class TestProject(TestModels):
     @pytest.fixture
     def project(self, organization):
-        return Project(
-            name="atokeneduser/goof",
-            id="6d5813be-7e6d-4ab8-80c2-1e3e2a454545",
-            created="2018-10-29T09:50:54.014Z",
-            origin="cli",
-            type="npm",
-            readOnly="false",
-            isMonitored="true",
-            testFrequency="daily",
-            lastTestedDate="2023-01-13T09:50:54.014Z",
-            issueCountsBySeverity={"critical": 1, "low": 8, "high": 13, "medium": 15},
-            organization=organization,
+        return Project.from_dict(
+            {
+                "attributes": {
+                    "build_args": {"root_workspace": "string"},
+                    "business_criticality": ["medium"],
+                    "created": "2021-05-29T09:50:54.014Z",
+                    "environment": ["external", "hosted"],
+                    "lifecycle": ["production"],
+                    "name": "atokeneduser/goof",
+                    "origin": "github",
+                    "read_only": False,
+                    "settings": {
+                        "auto_dependency_upgrade": {
+                            "ignored_dependencies": ["typescript"],
+                            "is_enabled": True,
+                            "is_major_upgrade_enabled": True,
+                            "limit": 10,
+                            "minimum_age": 365,
+                        },
+                        "auto_remediation_prs": {
+                            "is_backlog_prs_enabled": True,
+                            "is_fresh_prs_enabled": True,
+                            "is_patch_remediation_enabled": True,
+                        },
+                        "manual_remediation_prs": {
+                            "is_patch_remediation_enabled": True
+                        },
+                        "pull_request_assignment": {
+                            "assignees": ["my-github-username"],
+                            "is_enabled": True,
+                            "type": "auto",
+                        },
+                        "pull_requests": {
+                            "fail_only_for_issues_with_fix": True,
+                            "policy": "all",
+                            "severity_threshold": "high",
+                        },
+                        "recurring_tests": {"frequency": "daily"},
+                    },
+                    "status": "active",
+                    "tags": [{"key": "some-key", "value": "some-value"}],
+                    "target_file": "package.json",
+                    "target_reference": "main",
+                    "target_runtime": "string",
+                    "type": "maven",
+                },
+                "id": "6d5813be-7e6d-4ab8-80c2-1e3e2a454545",
+                "meta": {
+                    "cli_monitored_at": "2021-05-29T09:50:54.014Z",
+                    "latest_dependency_total": {
+                        "total": 0,
+                        "updated_at": "1970-01-01T00:00:00.000Z",
+                    },
+                    "latest_issue_counts": {
+                        "critical": 0,
+                        "high": 0,
+                        "low": 0,
+                        "medium": 0,
+                        "updated_at": "1970-01-01T00:00:00.000Z",
+                    },
+                },
+                "relationships": {
+                    "importer": {
+                        "data": {
+                            "id": "4a72d1db-b465-4764-99e1-ecedad03b06a",
+                            "type": "resource",
+                        },
+                        "links": {
+                            "related": {
+                                "href": "https://example.com/api/resource/4a72d1db-b465-4764-99e1-ecedad03b06a"
+                            }
+                        },
+                    },
+                    "organization": {
+                        "data": {
+                            "id": "4a72d1db-b465-4764-99e1-ecedad03b06a",
+                            "type": "resource",
+                        },
+                        "links": {
+                            "related": {
+                                "href": "https://example.com/api/resource/4a72d1db-b465-4764-99e1-ecedad03b06a"
+                            }
+                        },
+                    },
+                    "owner": {
+                        "data": {
+                            "id": "4a72d1db-b465-4764-99e1-ecedad03b06a",
+                            "type": "resource",
+                        },
+                        "links": {
+                            "related": {
+                                "href": "https://example.com/api/resource/4a72d1db-b465-4764-99e1-ecedad03b06a"
+                            }
+                        },
+                    },
+                    "target": {
+                        "data": {
+                            "id": "4a72d1db-b465-4764-99e1-ecedad03b06a",
+                            "type": "resource",
+                        },
+                        "links": {
+                            "related": {
+                                "href": "https://example.com/api/resource/4a72d1db-b465-4764-99e1-ecedad03b06a"
+                            }
+                        },
+                    },
+                },
+                "type": "project",
+            }
         )
 
     @pytest.fixture

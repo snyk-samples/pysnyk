@@ -123,19 +123,32 @@ class TagManager(Manager):
 
     def add(self, key, value) -> bool:
         tag = {"key": key, "value": value}
-        path = "org/%s/project/%s/tags" % (
-            self.instance.organization.id,
-            self.instance.id,
-        )
-        return bool(self.client.post(path, tag))
+        new_tags: List[Dict[str, str]] = self.all()
+        new_tags.append(tag)
+        return bool(self.__update_tags(new_tags))
 
     def delete(self, key, value) -> bool:
-        tag = {"key": key, "value": value}
-        path = "org/%s/project/%s/tags/remove" % (
+        filtered_tags: List[Dict[str, str]] = [tag for tag in self.all() if tag["key"] != key and tag["value"] != value]
+
+        return bool(self.__update_tags(filtered_tags))
+
+    def __update_tags(self, tags: List[Dict[str, str]]):
+        path = "orgs/%s/projects/%s" % (
             self.instance.organization.id,
             self.instance.id,
         )
-        return bool(self.client.post(path, tag))
+        body: Dict[str, Any] = {
+            "data": {
+                "attributes": {
+                    "tags": tags,
+                },
+                "id": self.instance.id,
+                "relationships": {},
+                "type": "project"
+            }
+        }
+
+        return self.client.patch(path, body)
 
 
 class ProjectManager(Manager):
@@ -225,9 +238,7 @@ class ProjectManager(Manager):
                 for project_data in resp.json()["data"]:
                     project_data["organization"] = self.instance.to_dict()
                     try:
-                        project_data["attributes"]["_tags"] = project_data[
-                            "attributes"
-                        ]["tags"]
+                        project_data["_tags"] = project_data["attributes"]["tags"]
                         del project_data["attributes"]["tags"]
                     except KeyError:
                         pass
@@ -250,7 +261,7 @@ class ProjectManager(Manager):
         return self._query(params=copy_params)
 
     def filter(self, tags: List[Dict[str, str]] = [], **kwargs: Any):
-        params = {**kwargs, **{"tags": tags}}
+        params = {**kwargs, **{"tags": tags}} if len(tags) > 0 else kwargs
         return self.all(params=params)
 
     def get(self, id: str, params: Dict[str, Any] = {}):
