@@ -622,7 +622,7 @@ class ProjectSettings(DataClassJSONMixin):
 
 @dataclass
 class LatestDependencyTotal(DataClassJSONMixin):
-    total: Optional[int] = None
+    total: Optional[int] = field(default_factory=int)
     updated_at: Optional[str] = None
 
 
