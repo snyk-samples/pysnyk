@@ -42,9 +42,9 @@ class SnykClient(object):
             "Authorization": "token %s" % self.api_token,
             "User-Agent": user_agent,
         }
-        self.api_post_headers = copy.deepcopy(self.api_headers)
+        self.api_post_headers = dict(self.api_headers)
         self.api_post_headers["Content-Type"] = "application/json"
-        self.api_patch_headers = copy.deepcopy(self.api_headers)
+        self.api_patch_headers = dict(self.api_headers)
         self.api_patch_headers["Content-Type"] = "application/vnd.api+json"
         self.tries = tries
         self.backoff = backoff
@@ -54,6 +54,7 @@ class SnykClient(object):
         self.__uuid_pattern = (
             r"[0-9a-f]{8}-[0-9a-f]{4}-[4][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
         )
+        self.__latest_version = "2024-06-21"
 
         # Ensure we don't have a trailing /
         if self.api_url[-1] == "/":
@@ -92,23 +93,26 @@ class SnykClient(object):
     def post(
         self,
         path: str,
-        body: Any,
-        headers: dict = {},
+        body: Dict[str, Any],
+        headers: Dict = {},
         params: Dict[str, Any] = {},
         use_rest: bool = False,
     ) -> requests.Response:
         url = f"{self.rest_api_url if use_rest else self.api_url}/{path}"
         logger.debug(f"POST: {url}")
 
-        if use_rest and "version" not in params:
-            params["version"] = self.version if self.version else "2024-06-21"
+        request_headers = {**self.api_post_headers, **headers}
+        if use_rest:
+            if "version" not in params:
+                params["version"] = self.version or self.__latest_version
+            request_headers["Content-Type"] = "application/vnd.api+json"
 
         resp = retry_call(
             self.request,
             fargs=[requests.post, url],
             fkwargs={
                 "json": body,
-                "headers": {**self.api_post_headers, **headers},
+                "headers": request_headers,
                 "params": params,
             },
             tries=self.tries,
@@ -135,7 +139,7 @@ class SnykClient(object):
         logger.debug(f"PATCH: {url}")
 
         if "version" not in params:
-            params["version"] = self.version if self.version else "2024-06-21"
+            params["version"] = self.version or self.__latest_version
 
         resp = retry_call(
             self.request,
@@ -161,7 +165,7 @@ class SnykClient(object):
         self,
         path: str,
         body: Any,
-        headers: dict = {},
+        headers: Dict = {},
         params: Dict[str, Any] = {},
         use_rest: bool = False,
     ) -> requests.Response:
@@ -171,15 +175,19 @@ class SnykClient(object):
         )
         logger.debug("PUT: %s" % url)
 
-        if use_rest and "version" not in params:
-            params["version"] = self.version if self.version else "2024-06-21"
+        request_headers = {**self.api_post_headers, **headers}
+
+        if use_rest:
+            if "version" not in params:
+                params["version"] = self.version or self.__latest_version
+            request_headers["Content-Type"] = "application/vnd.api+json"
 
         resp = retry_call(
             self.request,
             fargs=[requests.put, url],
             fkwargs={
                 "json": body,
-                "headers": {**self.api_post_headers, **headers},
+                "headers": request_headers,
                 "params": params,
             },
             tries=self.tries,
@@ -196,7 +204,7 @@ class SnykClient(object):
     def get(
         self,
         path: str,
-        params: dict = None,
+        params: Dict = None,
         version: str = None,
         exclude_version: bool = False,
         exclude_params: bool = False,
@@ -281,7 +289,7 @@ class SnykClient(object):
 
         params = {}
         if use_rest:
-            params["version"] = self.version if self.version else "2024-06-21"
+            params["version"] = self.version or self.__latest_version
 
         logger.debug(f"DELETE: {url}")
 
@@ -300,7 +308,7 @@ class SnykClient(object):
 
         return resp
 
-    def get_rest_pages(self, path: str, params: dict = {}) -> List:
+    def get_rest_pages(self, path: str, params: Dict = {}) -> List:
         """
         Helper function to collect paginated responses from the rest API into a single
         list.
