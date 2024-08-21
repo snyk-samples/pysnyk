@@ -913,7 +913,7 @@ class Project(DataClassJSONMixin):
                 semver=issue.issueData.semver,
                 fromPackages=issue.introducedThrough or [],
                 language=issue.issueData.language,
-                packageManager=self.type,
+                packageManager=self.attributes.type,
                 publicationTime=issue.issueData.publicationTime,
                 priorityScore=issue.priorityScore,
                 disclosureTime=issue.issueData.disclosureTime,

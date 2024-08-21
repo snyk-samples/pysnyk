@@ -50,7 +50,7 @@ class TestOrganization(TestModels):
                 "attributes": {
                     "build_args": {"root_workspace": "string"},
                     "business_criticality": ["medium"],
-                    "created": "2021-05-29T09:50:54.014Z",
+                    "created": "2018-10-29T09:50:54.014Z",
                     "environment": ["external", "hosted"],
                     "lifecycle": ["production"],
                     "name": "atokeneduser/goof",
@@ -89,21 +89,21 @@ class TestOrganization(TestModels):
                     "target_file": "package.json",
                     "target_reference": "main",
                     "target_runtime": "string",
-                    "type": "maven",
+                    "type": "npm",
                 },
                 "id": "6d5813be-7e6d-4ab8-80c2-1e3e2a454545",
                 "meta": {
-                    "cli_monitored_at": "2021-05-29T09:50:54.014Z",
+                    "cli_monitored_at": "2023-01-13T09:50:54.014Z",
                     "latest_dependency_total": {
                         "total": 0,
-                        "updated_at": "1970-01-01T00:00:00.000Z",
+                        "updated_at": "2023-01-13T09:50:54.014Z",
                     },
                     "latest_issue_counts": {
                         "critical": 1,
                         "high": 13,
                         "low": 8,
                         "medium": 15,
-                        "updated_at": "1970-01-01T00:00:00.000Z",
+                        "updated_at": "2023-01-13T09:50:54.014Z",
                     },
                 },
                 "relationships": {
@@ -448,35 +448,35 @@ class TestProject(TestModels):
                 "attributes": {
                     "build_args": {"root_workspace": "string"},
                     "business_criticality": ["medium"],
-                    "created": "2021-05-29T09:50:54.014Z",
+                    "created": "2018-10-29T09:50:54.014Z",
                     "environment": ["external", "hosted"],
                     "lifecycle": ["production"],
                     "name": "atokeneduser/goof",
                     "origin": "github",
-                    "read_only": False,
+                    "read_only": "false",
                     "settings": {
                         "auto_dependency_upgrade": {
                             "ignored_dependencies": ["typescript"],
-                            "is_enabled": True,
-                            "is_major_upgrade_enabled": True,
+                            "is_enabled": "true",
+                            "is_major_upgrade_enabled": "true",
                             "limit": 10,
                             "minimum_age": 365,
                         },
                         "auto_remediation_prs": {
-                            "is_backlog_prs_enabled": True,
-                            "is_fresh_prs_enabled": True,
-                            "is_patch_remediation_enabled": True,
+                            "is_backlog_prs_enabled": "true",
+                            "is_fresh_prs_enabled": "true",
+                            "is_patch_remediation_enabled": "true",
                         },
                         "manual_remediation_prs": {
-                            "is_patch_remediation_enabled": True
+                            "is_patch_remediation_enabled": "true"
                         },
                         "pull_request_assignment": {
                             "assignees": ["my-github-username"],
-                            "is_enabled": True,
+                            "is_enabled": "true",
                             "type": "auto",
                         },
                         "pull_requests": {
-                            "fail_only_for_issues_with_fix": True,
+                            "fail_only_for_issues_with_fix": "true",
                             "policy": "all",
                             "severity_threshold": "high",
                         },
@@ -487,21 +487,21 @@ class TestProject(TestModels):
                     "target_file": "package.json",
                     "target_reference": "main",
                     "target_runtime": "string",
-                    "type": "maven",
+                    "type": "npm",
                 },
                 "id": "6d5813be-7e6d-4ab8-80c2-1e3e2a454545",
                 "meta": {
-                    "cli_monitored_at": "2021-05-29T09:50:54.014Z",
+                    "cli_monitored_at": "2023-01-13T09:50:54.014Z",
                     "latest_dependency_total": {
                         "total": 0,
-                        "updated_at": "1970-01-01T00:00:00.000Z",
+                        "updated_at": "2023-01-13T09:50:54.014Z",
                     },
                     "latest_issue_counts": {
-                        "critical": 0,
-                        "high": 0,
-                        "low": 0,
-                        "medium": 0,
-                        "updated_at": "1970-01-01T00:00:00.000Z",
+                        "critical": 1,
+                        "high": 13,
+                        "low": 8,
+                        "medium": 15,
+                        "updated_at": "2023-01-13T09:50:54.014Z",
                     },
                 },
                 "relationships": {
