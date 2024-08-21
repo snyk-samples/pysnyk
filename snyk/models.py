@@ -569,6 +569,7 @@ class User(DataClassJSONMixin):
     username: str
     email: str
 
+
 @dataclass
 class AutoDependencyUpgrade(DataClassJSONMixin):
     ignored_dependencies: Optional[List[str]] = None
@@ -643,7 +644,6 @@ class ProjectAttributes(DataClassJSONMixin):
     status: str
     target_file: str
     target_reference: str
-    type: str
     target_runtime: Optional[str] = None
     build_args: Optional[Dict[str, str]] = None
     business_criticality: Optional[List[str]] = None
@@ -710,7 +710,7 @@ class Project(DataClassJSONMixin):
     attributes: ProjectAttributes
     id: str
     type: str
-    organization: Organization = None
+    organization: Organization = None  # type: ignore
     meta: Optional[ProjectMeta] = None
     relationships: Optional[ProjectRelationships] = None
     _tags: Optional[List[Any]] = field(default_factory=list)

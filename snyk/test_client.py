@@ -182,20 +182,24 @@ class TestSnykClient(object):
         requests_mock.get(matcher, json={})
         assert [] == rest_client.projects.all()
 
-    def test_projects(self, requests_mock, rest_client, organizations, projects):
+    def test_projects(
+        self, requests_mock, client, rest_client, organizations, projects
+    ):
         requests_mock.get("https://api.snyk.io/v1/orgs", json=organizations)
         matcher = re.compile("projects.*$")
         requests_mock.get(matcher, json=projects)
-        assert len(rest_client.projects.all()) == 2
-        assert all(type(x) is Project for x in rest_client.projects.all())
+        assert len(client.projects.all()) == 2
+        assert all(type(x) is Project for x in client.projects.all())
 
-    def test_project(self, requests_mock, rest_client, organizations, projects):
+    def test_project(self, requests_mock, client, organizations, projects):
         requests_mock.get("https://api.snyk.io/v1/orgs", json=organizations)
         matcher = re.compile("projects.*$")
         requests_mock.get(matcher, json=projects)
         assert (
             "testing-new-name"
-            == rest_client.projects.get("f9fec29a-d288-40d9-a019-cedf825e6efb").attributes.name
+            == client.projects.get(
+                "f9fec29a-d288-40d9-a019-cedf825e6efb"
+            ).attributes.name
         )
 
     def test_non_existent_project(self, requests_mock, client, organizations, projects):

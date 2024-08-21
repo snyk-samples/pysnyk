@@ -128,7 +128,9 @@ class TagManager(Manager):
         return bool(self.__update_tags(new_tags))
 
     def delete(self, key, value) -> bool:
-        filtered_tags: List[Dict[str, str]] = [tag for tag in self.all() if tag["key"] != key and tag["value"] != value]
+        filtered_tags: List[Dict[str, str]] = [
+            tag for tag in self.all() if tag["key"] != key and tag["value"] != value
+        ]
 
         return bool(self.__update_tags(filtered_tags))
 
@@ -144,7 +146,7 @@ class TagManager(Manager):
                 },
                 "id": self.instance.id,
                 "relationships": {},
-                "type": "project"
+                "type": "project",
             }
         }
 
