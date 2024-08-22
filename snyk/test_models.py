@@ -1041,3 +1041,27 @@ class TestProject(TestModels):
             },
         )
         assert next(iter(project.dependency_graph.pkgs)).info.version is None
+
+    def test_get_project_by_id_default_query_parameters_are_passed(
+        self, organization, project, requests_mock
+    ):
+        matcher = re.compile(
+            "orgs/%s/projects/%s\\?(?=.*version=[0-9]{4}-[0-9]{2}-[0-9]{2}).*?(?=.*meta.latest_issue_counts=true).*?(?=.*expand=target)"
+            % (organization.id, project.id)
+        )
+        requests_mock.get(matcher, json={})
+        organization.projects.get(project.id)
+
+        assert requests_mock.call_count == 1
+
+    def test_get_all_projects_default_query_parameters_are_passed(
+        self, organization, project, requests_mock
+    ):
+        matcher = re.compile(
+            "orgs/%s/projects\\?(?=.*version=[0-9]{4}-[0-9]{2}-[0-9]{2}).*?(?=.*meta.latest_issue_counts=true).*?(?=.*expand=target).*?(?=.*limit=([1-9]0)|100)"
+            % organization.id
+        )
+        requests_mock.get(matcher, json={})
+        organization.projects.all()
+
+        assert requests_mock.call_count == 1

@@ -19,8 +19,8 @@ org_id = args.orgId
 
 client = SnykClient(token=snyk_token)
 for proj in client.organizations.get(org_id).projects.all():
-    print("\nProject name: %s" % proj.name)
+    print("\nProject name: %s" % proj.attributes.name)
     print("  Issues Found:")
-    print("      High  : %s" % proj.issueCountsBySeverity.high)
-    print("      Medium: %s" % proj.issueCountsBySeverity.medium)
-    print("      Low   : %s" % proj.issueCountsBySeverity.low)
+    print("      High  : %s" % proj.meta.latest_issue_counts.high)
+    print("      Medium: %s" % proj.meta.latest_issue_counts.medium)
+    print("      Low   : %s" % proj.meta.latest_issue_counts.low)
