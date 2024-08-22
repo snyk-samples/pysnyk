@@ -37,9 +37,9 @@ client = SnykClient(snyk_token)
 projects = client.organizations.get(org_id).projects.all()
 
 github_projects = [
-    {"id": p.id, "name": p.name}
+    {"id": p.id, "name": p.attributes.name}
     for p in projects
-    if p.origin == "github"
+    if p.attributes.origin == "github"
 ]
 
 def get_project_by_id(projects, project_id):

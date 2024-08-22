@@ -23,7 +23,7 @@ projects = client.organizations.get(org_id).projects.all()
 
 for proj in projects:
     project_id = proj.id
-    project_name = proj.name
+    project_name = proj.attributes.name
     ignores = proj.ignores.all()
 
     if len(ignores) > 0:
