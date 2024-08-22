@@ -1065,3 +1065,41 @@ class TestProject(TestModels):
         organization.projects.all()
 
         assert requests_mock.call_count == 1
+
+    def test_filter_projects_has_tags_in_query_params(
+        self, organization, project, requests_mock
+    ):
+        tags = [
+            {"key": "some-key", "value": "some-value"},
+            {"key": "other-key", "value": "other-value"},
+        ]
+        matcher = re.compile(
+            "orgs/"
+            + organization.id
+            + "/projects\\?(?=.*version=[0-9]{4}-[0-9]{2}-[0-9]{2}).*?(?=.*meta.latest_issue_counts=true).*?(?=.*expand=target).*?(?=.*limit=([1-9]0)|100).*?(?=.*tags=some-key%3Asome-value%2Cother-key%3Aother-value)"
+        )
+        requests_mock.get(matcher, json={})
+        organization.projects.filter(tags=tags)
+        assert requests_mock.call_count == 1
+
+    def test_filter_projects_has_tags_and_params_in_query_params(
+        self, organization, requests_mock
+    ):
+        params = {
+            "environment": ["backend", "frontend"],
+            "business_criticality": ["critical", "high"],
+        }
+        tags = [
+            {"key": "some-key", "value": "some-value"},
+            {"key": "other-key", "value": "other-value"},
+        ]
+        matcher = re.compile(
+            "orgs/"
+            + organization.id
+            + "/projects\\?(?=.*version=[0-9]{4}-[0-9]{2}-[0-9]{2}).*?(?=.*meta.latest_issue_counts=true).*?(?=.*expand=target).*?(?=.*limit=([1-9]0)|100).*?(?=.*tags=some-key%3Asome-value%2Cother-key%3Aother-value).*?(?=.*environment=backend%2Cfrontend).*?(?=.*business_criticality=critical%2Chigh)"
+        )
+
+        requests_mock.get(matcher, json={})
+        organization.projects.filter(tags=tags, **params)
+
+        assert requests_mock.call_count == 1
