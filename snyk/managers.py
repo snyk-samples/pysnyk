@@ -154,57 +154,6 @@ class TagManager(Manager):
 
 
 class ProjectManager(Manager):
-    def _rest_to_v1_response_format(self, project):
-        attributes = project.get("attributes", {})
-        settings = attributes.get("settings", {})
-        recurring_tests = settings.get("recurring_tests", {})
-        issue_counts = project.get("meta", {}).get("latest_issue_counts", {})
-        remote_repo_url = (
-            project.get("relationships", {})
-            .get("target", {})
-            .get("data", {})
-            .get("attributes", {})
-            .get("url")
-        )
-        image_cluster = (
-            project.get("relationships", {})
-            .get("target", {})
-            .get("data", {})
-            .get("meta", {})
-            .get("integration_data", {})
-            .get("cluster")
-        )
-        return {
-            "name": attributes.get("name"),
-            "id": project.get("id"),
-            "created": attributes.get("created"),
-            "origin": attributes.get("origin"),
-            "type": attributes.get("type"),
-            "readOnly": attributes.get("read_only"),
-            "testFrequency": recurring_tests.get("frequency"),
-            "lastTestedDate": issue_counts.get("updated_at"),
-            "isMonitored": True if attributes.get("status") == "active" else False,
-            "issueCountsBySeverity": {
-                "low": issue_counts.get("low", 0),
-                "medium": issue_counts.get("medium", 0),
-                "high": issue_counts.get("high", 0),
-                "critical": issue_counts.get("critical", 0),
-            },
-            "targetReference": attributes.get("target_reference"),
-            "branch": attributes.get("target_reference"),
-            "remoteRepoUrl": remote_repo_url,
-            "imageCluster": image_cluster,
-            "_tags": attributes.get("tags", []),
-            "importingUserId": project.get("relationships", {})
-            .get("importer", {})
-            .get("data", {})
-            .get("id"),
-            "owningUserId": project.get("relationships", {})
-            .get("owner", {})
-            .get("data", {})
-            .get("id"),
-        }
-
     def _query(self, next_url: str = None, params: Dict[str, Any] = {}):
         projects = []
         if "limit" not in params:

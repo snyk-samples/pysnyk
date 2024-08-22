@@ -42,8 +42,8 @@ project_origin = args.projectOrigin
 
 client = SnykClient(snyk_token)
 for project in client.organizations.get(org_id).projects.all():
-    if project_name == project.name and (
-        project.origin == project_origin or not project_origin
+    if project_name == project.attributes.name and (
+        project.attributes.origin == project_origin or not project_origin
     ):
         if project.delete():
             print("Project ID %s deleted" % project.id)

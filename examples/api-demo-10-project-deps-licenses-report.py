@@ -100,8 +100,8 @@ all_projects_list = []
 client = SnykClient(snyk_token)
 projects = client.organizations.get(org_id).projects.all()
 for proj in projects:
-    if proj.origin in allowed_origins:
-        all_projects_list.append({"project_id": proj.id, "project_name": proj.name})
+    if proj.attributes.origin in allowed_origins:
+        all_projects_list.append({"project_id": proj.id, "project_name": proj.attributes.name})
 
 project_trees = []
 flattened_project_dependencies_lists = []

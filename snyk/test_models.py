@@ -1103,3 +1103,25 @@ class TestProject(TestModels):
         organization.projects.filter(tags=tags, **params)
 
         assert requests_mock.call_count == 1
+
+    def test_get_all_projects_has_query_params_when_passed(
+        self, organization, requests_mock
+    ):
+        params = {
+            "environment": ["backend", "frontend"],
+            "business_criticality": ["critical", "high"],
+            "tags": [
+                {"key": "some-key", "value": "some-value"},
+                {"key": "other-key", "value": "other-value"},
+            ],
+        }
+
+        matcher = re.compile(
+            "orgs/"
+            + organization.id
+            + "/projects\\?(?=.*version=[0-9]{4}-[0-9]{2}-[0-9]{2}).*?(?=.*meta.latest_issue_counts=true).*?(?=.*expand=target).*?(?=.*limit=([1-9]0)|100).*?(?=.*tags=some-key%3Asome-value%2Cother-key%3Aother-value).*?(?=.*environment=backend%2Cfrontend).*?(?=.*business_criticality=critical%2Chigh)"
+        )
+
+        requests_mock.get(matcher, json={})
+        organization.projects.all(params=params)
+        assert requests_mock.call_count == 1
