@@ -267,7 +267,7 @@ class ProjectManager(Manager):
         environment: Optional[List[str]] = None,
         business_criticality: Optional[List[str]] = None,
         lifecycle: Optional[List[str]] = None,
-        test_frequency: Optional[List[str]] = None,
+        test_frequency: Optional[str] = None,
     ) -> bool:
         if not self.instance:
             self.instance = self.get(id).organization

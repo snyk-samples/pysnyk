@@ -1125,3 +1125,59 @@ class TestProject(TestModels):
         requests_mock.get(matcher, json={})
         organization.projects.all(params=params)
         assert requests_mock.call_count == 1
+
+    def test_update_project_has_query_params_when_passed(
+        self, organization, project, requests_mock
+    ):
+        params = {"expand": "target"}
+        matcher = re.compile(
+            "orgs/%s/projects/%s\\?(?=.*version=[0-9]{4}-[0-9]{2}-[0-9]{2}).*?(?=.*expand=target)"
+            % (organization.id, project.id)
+        )
+
+        requests_mock.patch(matcher, json={})
+
+        organization.projects.update(project.id, params=params)
+
+        assert requests_mock.call_count == 1
+
+    def test_update_project_with_every_field(
+        self, organization, project, requests_mock
+    ):
+        matcher = re.compile(
+            "orgs/%s/projects/%s\\?version=[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+            % (organization.id, project.id)
+        )
+        tags = [{"key": "key-test", "value": "value-test"}]
+        environment = ["backend", "frontend"]
+        business_criticality = ["critical", "low", "medium"]
+        lifecycle = ["development", "production"]
+        test_frequency = "daily"
+        body = {
+            "data": {
+                "id": project.id,
+                "attributes": {
+                    "tags": tags,
+                    "environment": environment,
+                    "business_criticality": business_criticality,
+                    "lifecycle": lifecycle,
+                    "test_frequency": test_frequency,
+                },
+                "relationships": {},
+                "type": "project",
+            },
+        }
+        requests_mock.patch(matcher, json={})
+
+        resp = organization.projects.update(
+            project.id,
+            tags=tags,
+            environment=environment,
+            lifecycle=lifecycle,
+            business_criticality=business_criticality,
+            test_frequency=test_frequency,
+        )
+        history = requests_mock.request_history
+        assert requests_mock.call_count == 1
+        assert resp == True
+        assert history[0].json() == body
