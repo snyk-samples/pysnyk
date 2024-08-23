@@ -1,6 +1,6 @@
 import abc
 import copy
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from deprecation import deprecated  # type: ignore
 
@@ -258,6 +258,47 @@ class ProjectManager(Manager):
                 return next(x for x in self.all(params=params) if x.id == id)
             except StopIteration:
                 raise SnykNotFoundError
+
+    def update(
+        self,
+        id: str,
+        params: Dict[str, Any] = {},
+        tags: Optional[List[Dict[str, str]]] = None,
+        environment: Optional[List[str]] = None,
+        business_criticality: Optional[List[str]] = None,
+        lifecycle: Optional[List[str]] = None,
+        test_frequency: Optional[List[str]] = None,
+    ) -> bool:
+        if not self.instance:
+            self.instance = self.get(id).organization
+
+        body: Dict[str, Any] = {
+            "data": {
+                "id": id,
+                "attributes": {},
+                "relationships": {},
+                "type": "project",
+            },
+        }
+
+        path: str = "orgs/%s/projects/%s" % (self.instance.id, id)
+
+        if tags:
+            body["data"]["attributes"]["tags"] = tags
+
+        if environment:
+            body["data"]["attributes"]["environment"] = environment
+
+        if business_criticality:
+            body["data"]["attributes"]["business_criticality"] = business_criticality
+
+        if lifecycle:
+            body["data"]["attributes"]["lifecycle"] = lifecycle
+
+        if test_frequency:
+            body["data"]["attributes"]["test_frequency"] = test_frequency
+
+        return bool(self.client.patch(path, body, params=params))
 
 
 class MemberManager(Manager):
