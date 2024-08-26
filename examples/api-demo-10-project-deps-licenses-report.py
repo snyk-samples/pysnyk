@@ -100,8 +100,8 @@ all_projects_list = []
 client = SnykClient(snyk_token)
 projects = client.organizations.get(org_id).projects.all()
 for proj in projects:
-    if proj.origin in allowed_origins:
-        all_projects_list.append({"project_id": proj.id, "project_name": proj.name})
+    if proj.attributes.origin in allowed_origins:
+        all_projects_list.append({"project_id": proj.id, "project_name": proj.attributes.name})
 
 project_trees = []
 flattened_project_dependencies_lists = []
@@ -112,6 +112,7 @@ for next_project in all_projects_list:
     next_project_id = next_project["project_id"]
 
     if args.projectId == "all" or next_project_id == args.projectId:
+        # Deprecated, check api-demo-2c-list-issues-aggregated
         next_project_tree = ProjectDependenciesReport.get_project_tree(
             snyk_token, org_id, next_project_id
         )

@@ -1,6 +1,6 @@
 import abc
-import json
-from typing import Any, Dict, List
+import copy
+from typing import Any, Dict, List, Optional
 
 from deprecation import deprecated  # type: ignore
 
@@ -123,85 +123,51 @@ class TagManager(Manager):
 
     def add(self, key, value) -> bool:
         tag = {"key": key, "value": value}
-        path = "org/%s/project/%s/tags" % (
-            self.instance.organization.id,
-            self.instance.id,
-        )
-        return bool(self.client.post(path, tag))
+        new_tags: List[Dict[str, str]] = self.all()
+        new_tags.append(tag)
+        return bool(self.__update_tags(new_tags))
 
     def delete(self, key, value) -> bool:
-        tag = {"key": key, "value": value}
-        path = "org/%s/project/%s/tags/remove" % (
+        filtered_tags: List[Dict[str, str]] = [
+            tag for tag in self.all() if tag["key"] != key and tag["value"] != value
+        ]
+
+        return bool(self.__update_tags(filtered_tags))
+
+    def __update_tags(self, tags: List[Dict[str, str]]):
+        path = "orgs/%s/projects/%s" % (
             self.instance.organization.id,
             self.instance.id,
         )
-        return bool(self.client.post(path, tag))
+        body: Dict[str, Any] = {
+            "data": {
+                "attributes": {
+                    "tags": tags,
+                },
+                "id": self.instance.id,
+                "relationships": {},
+                "type": "project",
+            }
+        }
+
+        return self.client.patch(path, body)
 
 
 class ProjectManager(Manager):
-    def _rest_to_v1_response_format(self, project):
-        attributes = project.get("attributes", {})
-        settings = attributes.get("settings", {})
-        recurring_tests = settings.get("recurring_tests", {})
-        issue_counts = project.get("meta", {}).get("latest_issue_counts", {})
-        remote_repo_url = (
-            project.get("relationships", {})
-            .get("target", {})
-            .get("data", {})
-            .get("attributes", {})
-            .get("url")
-        )
-        image_cluster = (
-            project.get("relationships", {})
-            .get("target", {})
-            .get("data", {})
-            .get("meta", {})
-            .get("integration_data", {})
-            .get("cluster")
-        )
-        return {
-            "name": attributes.get("name"),
-            "id": project.get("id"),
-            "created": attributes.get("created"),
-            "origin": attributes.get("origin"),
-            "type": attributes.get("type"),
-            "readOnly": attributes.get("read_only"),
-            "testFrequency": recurring_tests.get("frequency"),
-            "lastTestedDate": issue_counts.get("updated_at"),
-            "isMonitored": True if attributes.get("status") == "active" else False,
-            "issueCountsBySeverity": {
-                "low": issue_counts.get("low", 0),
-                "medium": issue_counts.get("medium", 0),
-                "high": issue_counts.get("high", 0),
-                "critical": issue_counts.get("critical", 0),
-            },
-            "targetReference": attributes.get("target_reference"),
-            "branch": attributes.get("target_reference"),
-            "remoteRepoUrl": remote_repo_url,
-            "imageCluster": image_cluster,
-            "_tags": attributes.get("tags", []),
-            "importingUserId": project.get("relationships", {})
-            .get("importer", {})
-            .get("data", {})
-            .get("id"),
-            "owningUserId": project.get("relationships", {})
-            .get("owner", {})
-            .get("data", {})
-            .get("id"),
-        }
-
-    def _query(self, tags: List[Dict[str, str]] = [], next_url: str = None):
+    def _query(self, next_url: str = None, params: Dict[str, Any] = {}):
         projects = []
-        params: dict = {"limit": 100}
+        if "limit" not in params:
+            params["limit"] = 100
+
         if self.instance:
             path = "/orgs/%s/projects" % self.instance.id if not next_url else next_url
 
             # Append to params if we've got tags
-            if tags:
-                for tag in tags:
+            if "tags" in params and not next_url:
+                for tag in params["tags"]:
                     if "key" not in tag or "value" not in tag or len(tag.keys()) != 2:
                         raise SnykError("Each tag must contain only a key and a value")
-                data = [f'{d["key"]}:{d["value"]}' for d in tags]
+                data = [f'{d["key"]}:{d["value"]}' for d in params["tags"]]
                 params["tags"] = ",".join(data)
 
             # Append the issue count param to the params if this is the first page
@@ -212,68 +178,133 @@ class ProjectManager(Manager):
             # And lastly, make the API call
             resp = self.client.get(
                 path,
-                version="2023-06-19",
+                version="2024-06-21",
                 params=params,
+                exclude_params=True if next_url else False,
                 exclude_version=True if next_url else False,
             )
 
             if "data" in resp.json():
                 # Process projects in current response
-                for response_data in resp.json()["data"]:
-                    project_data = self._rest_to_v1_response_format(response_data)
+                for project_data in resp.json()["data"]:
                     project_data["organization"] = self.instance.to_dict()
                     try:
-                        project_data["attributes"]["_tags"] = project_data[
-                            "attributes"
-                        ]["tags"]
+                        project_data["_tags"] = project_data["attributes"]["tags"]
                         del project_data["attributes"]["tags"]
                     except KeyError:
                         pass
-                    if not project_data.get("totalDependencies"):
-                        project_data["totalDependencies"] = 0
                     projects.append(self.klass.from_dict(project_data))
 
                 # If we have another page, then process this page too
                 if "next" in resp.json().get("links", {}):
                     next_url = resp.json().get("links", {})["next"]
-                    projects.extend(self._query(tags, next_url))
+                    projects.extend(self._query(next_url=next_url, params=params))
 
             for x in projects:
                 x.organization = self.instance
         else:
             for org in self.client.organizations.all():
-                projects.extend(org.projects.all())
+                projects.extend(org.projects.all(params=params))
         return projects
 
-    def all(self):
-        return self._query()
+    def all(self, params: Dict[str, Any] = {}):
+        copy_params = copy.deepcopy(params)
+        return self._query(params=copy_params)
 
     def filter(self, tags: List[Dict[str, str]] = [], **kwargs: Any):
-        if tags:
-            return self._filter_by_kwargs(self._query(tags), **kwargs)
-        else:
-            return super().filter(**kwargs)
+        params = {**kwargs, **{"tags": tags}} if len(tags) > 0 else kwargs
+        return self.all(params=params)
 
-    def get(self, id: str):
+    def get(self, id: str, params: Dict[str, Any] = {}):
         if self.instance:
-            path = "org/%s/project/%s" % (self.instance.id, id)
-            resp = self.client.get(path)
+            copy_params = copy.deepcopy(params)
+            if "meta.latest_issue_counts" not in copy_params:
+                copy_params["meta.latest_issue_counts"] = "true"
+            if "expand" not in copy_params:
+                copy_params["expand"] = "target"
+            version = (
+                copy_params["version"] if "version" in copy_params else "2024-06-21"
+            )
+            copy_params.pop("version", None)
+
+            path = "orgs/%s/projects/%s" % (self.instance.id, id)
+
+            if "tags" in copy_params:
+                for tag in copy_params["tags"]:
+                    if "key" not in tag or "value" not in tag or len(tag.keys()) != 2:
+                        raise SnykError("Each tag must contain only a key and a value")
+                data = [f'{d["key"]}:{d["value"]}' for d in copy_params["tags"]]
+                copy_params["tags"] = ",".join(data)
+
+            resp = self.client.get(path, params=copy_params, version=version)
             project_data = resp.json()
-            project_data["organization"] = self.instance.to_dict()
-            # We move tags to _tags as a cache, to avoid the need for additional requests
-            # when working with tags. We want tags to be the manager
-            try:
-                project_data["_tags"] = project_data["tags"]
-                del project_data["tags"]
-            except KeyError:
-                pass
-            if project_data.get("totalDependencies") is None:
-                project_data["totalDependencies"] = 0
-            project_klass = self.klass.from_dict(project_data)
-            project_klass.organization = self.instance
-            return project_klass
+            if "data" in project_data:
+                project_data = project_data["data"]
+                project_data["organization"] = self.instance.to_dict()
+                # We move tags to _tags as a cache, to avoid the need for additional requests
+                # when working with tags. We want tags to be the manager
+                try:
+                    project_data["_tags"] = project_data["attributes"]["tags"]
+                    del project_data["attributes"]["tags"]
+                except KeyError:
+                    pass
+                # if project_data.get("totalDependencies") is None:
+                #     project_data["totalDependencies"] = 0
+                project_klass = self.klass.from_dict(project_data)
+                project_klass.organization = self.instance
+                return project_klass
         else:
-            return super().get(id)
+            try:
+                return next(x for x in self.all(params=params) if x.id == id)
+            except StopIteration:
+                raise SnykNotFoundError
+
+    def update(
+        self,
+        id: str,
+        params: Dict[str, Any] = {},
+        tags: Optional[List[Dict[str, str]]] = None,
+        environment: Optional[List[str]] = None,
+        business_criticality: Optional[List[str]] = None,
+        lifecycle: Optional[List[str]] = None,
+        test_frequency: Optional[str] = None,
+        owner_id: Optional[str] = None,
+    ) -> bool:
+        if not self.instance:
+            self.instance = self.get(id).organization
+
+        body: Dict[str, Any] = {
+            "data": {
+                "id": id,
+                "attributes": {},
+                "relationships": {},
+                "type": "project",
+            },
+        }
+
+        path: str = "orgs/%s/projects/%s" % (self.instance.id, id)
+
+        if tags:
+            body["data"]["attributes"]["tags"] = tags
+
+        if environment:
+            body["data"]["attributes"]["environment"] = environment
+
+        if business_criticality:
+            body["data"]["attributes"]["business_criticality"] = business_criticality
+
+        if lifecycle:
+            body["data"]["attributes"]["lifecycle"] = lifecycle
+
+        if test_frequency:
+            body["data"]["attributes"]["test_frequency"] = test_frequency
+
+        if owner_id:
+            body["data"]["relationships"] = {
+                "owner": {"data": {"id": owner_id, "type": "user"}}
+            }
+
+        return bool(self.client.patch(path, body, params=params))
 
 
 class MemberManager(Manager):

@@ -274,3 +274,28 @@ response = rest_client.post(f"orgs/{snyk_org}/invites", body={"email": "some.bod
 ```
 
 For backwards compatibility the get_rest_pages method has an alternative name of get_v3_pages to not break code already rewritten replatformed to the 0.9.0 pysnyk module.
+
+## Migrating from old project to new project entity
+
+The rest API introduces a new representation for the project class, which offers more information. There are some changes necessary to keep the same functionality
+of the application:
+- The old project attributes can be accessed using the attributes class. The below example 
+```python
+project.name -> project.attributes.name
+project.created -> project.attributes.created
+project.origin -> project.attributes.origin
+project.type -> project.attributes.type
+project.readOnly -> project.attributes.read_only
+project.attributes.criticality -> project.attributes.business_criticality
+project.totalDependencies -> project.meta.latest_dependency_total.total
+project.issueCountsBySeverity -> project.meta.latest_issue_counts
+project.lastTestedDate -> project.meta.cli_monitored_at
+project.importingUser.id -> project.relationships.importer.data.id
+project.isMonitored -> project.attributes.status
+project.targetReference -> project.attributes.target_reference
+```
+
+To update an existing project, the update method from `ProjectManager` can be used, as in the following example:
+```python
+client.organizations.get(org_id).projects.update(project_id, tags=[{"key":"added_tag_key2", "value":"added_tag_value2"}], environment=[], business_criticality=["critical","low","medium"], lifecycle=["development","production"], test_frequency="daily")
+```

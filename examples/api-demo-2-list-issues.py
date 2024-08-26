@@ -57,6 +57,7 @@ def output_excel(vulns, output_path):
 
 
 client = SnykClient(snyk_token)
+#Deprecated, check api-demo-2c-list-issues-aggregated
 issue_set = client.organizations.get(org_id).projects.get(project_id).issueset.all()
 
 lst_output = []

@@ -3,7 +3,6 @@ import re
 from dataclasses import InitVar, dataclass, field
 from typing import Any, Dict, List, Optional, Union
 
-import requests
 from deprecation import deprecated  # type: ignore
 from mashumaro.mixins.json import DataClassJSONMixin  # type: ignore
 
@@ -245,7 +244,7 @@ class Organization(DataClassJSONMixin):
     # https://snyk.docs.apiary.io/#reference/users/user-organisation-notification-settings/modify-org-notification-settings
     # https://snyk.docs.apiary.io/#reference/users/user-organisation-notification-settings/get-org-notification-settings
     def notification_settings(self):
-        raise SnykNotImplemented  # pragma: no cover
+        raise SnykNotImplementedError  # pragma: no cover
 
     # https://snyk.docs.apiary.io/#reference/organisations/the-snyk-organisation-for-a-request/invite-users
     def invite(self, email: str, admin: bool = False) -> bool:
@@ -572,34 +571,157 @@ class User(DataClassJSONMixin):
 
 
 @dataclass
-class Project(DataClassJSONMixin):
+class AutoDependencyUpgrade(DataClassJSONMixin):
+    ignored_dependencies: Optional[List[str]] = None
+    is_enabled: Optional[bool] = None
+    is_major_upgrade_enabled: Optional[bool] = None
+    limit: Optional[int] = None
+    minimum_age: Optional[int] = None
+
+
+@dataclass
+class ManualRemediationPRS(DataClassJSONMixin):
+    is_patch_remediation_enabled: Optional[bool] = None
+
+
+@dataclass
+class PullRequestAssignment(DataClassJSONMixin):
+    assignees: Optional[List[str]] = None
+    is_enabled: Optional[bool] = None
+    type: Optional[str] = None
+
+
+@dataclass
+class AutoRemediationPRS(DataClassJSONMixin):
+    is_backlog_prs_enabled: Optional[bool] = None
+    is_fresh_prs_enabled: Optional[bool] = None
+    is_patch_remediation_enabled: Optional[bool] = None
+
+
+@dataclass
+class ProjectRecurringTests(DataClassJSONMixin):
+    frequency: Optional[str] = None
+
+
+@dataclass
+class ProjectPullRequests(DataClassJSONMixin):
+    fail_only_for_issues_with_fix: Optional[bool] = None
+    policy: Optional[str] = None
+    severity_threshold: Optional[str] = None
+
+
+@dataclass
+class ProjectSettings(DataClassJSONMixin):
+    pull_requests: ProjectPullRequests
+    recurring_tests: ProjectRecurringTests
+    pull_request_assignment: Optional[PullRequestAssignment] = None
+    manual_remediation_prs: Optional[ManualRemediationPRS] = None
+    auto_remediation_prs: Optional[AutoRemediationPRS] = None
+    auto_dependency_upgrade: Optional[AutoDependencyUpgrade] = None
+
+
+@dataclass
+class LatestDependencyTotal(DataClassJSONMixin):
+    total: Optional[int] = field(default_factory=int)
+    updated_at: Optional[str] = None
+
+
+@dataclass
+class ProjectMeta(DataClassJSONMixin):
+    cli_monitored_at: Optional[str] = None
+    latest_dependency_total: Optional[LatestDependencyTotal] = None
+    latest_issue_counts: Optional[IssueCounts] = None
+
+
+@dataclass
+class ProjectAttributes(DataClassJSONMixin):
     name: str
-    organization: Organization
-    id: str
     created: str
     origin: str
     type: str
-    readOnly: bool
-    testFrequency: str
-    lastTestedDate: str
-    isMonitored: bool
-    issueCountsBySeverity: IssueCounts
-    importingUserId: Optional[str] = None
-    owningUserId: Optional[str] = None
-    hostname: Optional[str] = None
-    remoteRepoUrl: Optional[str] = None
-    branch: Optional[str] = None
-    imageCluster: Optional[str] = None
-    attributes: Optional[Dict[str, List[str]]] = None
+    read_only: bool
+    settings: ProjectSettings
+    status: str
+    target_file: str
+    target_reference: str
+    target_runtime: Optional[str] = None
+    build_args: Optional[Dict[str, str]] = None
+    business_criticality: Optional[List[str]] = None
+    environment: Optional[List[str]] = None
+    lifecycle: Optional[List[str]] = None
+    tags: Optional[List[Any]] = field(default_factory=list)
+    meta: Optional[ProjectMeta] = None
+
+
+@dataclass
+class ProjectOrganizationData(DataClassJSONMixin):
+    id: str
+    type: str
+
+
+@dataclass
+class LinksHref(DataClassJSONMixin):
+    href: str
+    meta: Optional[Dict[Any, Any]] = None
+
+
+@dataclass
+class GenericLinks(DataClassJSONMixin):
+    related: Optional[Union[str, LinksHref]] = None
+
+
+@dataclass
+class DataLinksMeta(DataClassJSONMixin):
+    data: ProjectOrganizationData
+    links: GenericLinks
+    meta: Optional[Dict[Any, Any]] = None
+
+
+@dataclass
+class ProjectRelationshipsTargetDataAttributes(DataClassJSONMixin):
+    display_name: str
+    url: Optional[str] = None
+
+
+@dataclass
+class ProjectRelationshipsTargetData(DataClassJSONMixin):
+    id: str
+    type: str
+    attributes: ProjectRelationshipsTargetDataAttributes
+    meta: Optional[Dict[str, Dict[Any, Any]]] = None
+
+
+@dataclass
+class ProjectRelationshipsTarget(DataClassJSONMixin):
+    data: ProjectRelationshipsTargetData
+    links: GenericLinks
+
+
+@dataclass
+class ProjectRelationships(DataClassJSONMixin):
+    organization: DataLinksMeta
+    target: Union[DataLinksMeta, ProjectRelationshipsTarget]
+    owner: Optional[DataLinksMeta] = None
+    importer: Optional[DataLinksMeta] = None
+
+
+@dataclass
+class Project(DataClassJSONMixin):
+    attributes: ProjectAttributes
+    id: str
+    type: str
+    organization: Organization = None  # type: ignore
+    meta: Optional[ProjectMeta] = None
+    relationships: Optional[ProjectRelationships] = None
     _tags: Optional[List[Any]] = field(default_factory=list)
 
     def delete(self) -> bool:
-        path = "org/%s/project/%s" % (self.organization.id, self.id)
+        path = "orgs/%s/projects/%s" % (self.organization.id, self.id)
 
         if self.organization.client is None:
             raise SnykError
 
-        return bool(self.organization.client.delete(path))
+        return bool(self.organization.client.delete(path, use_rest=True))
 
     def activate(self) -> bool:
         path = "org/%s/project/%s/activate" % (self.organization.id, self.id)
@@ -791,7 +913,7 @@ class Project(DataClassJSONMixin):
                 semver=issue.issueData.semver,
                 fromPackages=issue.introducedThrough or [],
                 language=issue.issueData.language,
-                packageManager=self.type,
+                packageManager=self.attributes.type,
                 publicationTime=issue.issueData.publicationTime,
                 priorityScore=issue.priorityScore,
                 disclosureTime=issue.issueData.disclosureTime,

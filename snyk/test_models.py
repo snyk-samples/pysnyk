@@ -24,8 +24,16 @@ class TestModels(object):
         return "https://api.snyk.io/v1"
 
     @pytest.fixture
+    def rest_base_url(self):
+        return "https://api.snyk.io/rest"
+
+    @pytest.fixture
     def organization_url(self, base_url, organization):
         return "%s/org/%s" % (base_url, organization.id)
+
+    @pytest.fixture
+    def organization_rest_url(self, rest_base_url, organization):
+        return "%s/orgs/%s" % (rest_base_url, organization.id)
 
 
 class TestOrganization(TestModels):
@@ -38,22 +46,114 @@ class TestOrganization(TestModels):
     @pytest.fixture
     def project(self):
         return {
-            "name": "atokeneduser/goof",
-            "id": "6d5813be-7e6d-4ab8-80c2-1e3e2a454545",
-            "created": "2018-10-29T09:50:54.014Z",
-            "origin": "cli",
-            "type": "npm",
-            "readOnly": "false",
-            "testFrequency": "daily",
-            "lastTestedDate": "2023-01-13T09:50:54.014Z",
-            "isMonitored": "true",
-            "issueCountsBySeverity": {
-                "critical": 1,
-                "low": 8,
-                "high": 13,
-                "medium": 15,
-            },
-            "tags": [{"key": "some-key", "value": "some-value"}],
+            "data": {
+                "attributes": {
+                    "build_args": {"root_workspace": "string"},
+                    "business_criticality": ["medium"],
+                    "created": "2018-10-29T09:50:54.014Z",
+                    "environment": ["external", "hosted"],
+                    "lifecycle": ["production"],
+                    "name": "atokeneduser/goof",
+                    "origin": "github",
+                    "read_only": "false",
+                    "settings": {
+                        "auto_dependency_upgrade": {
+                            "ignored_dependencies": ["typescript"],
+                            "is_enabled": "true",
+                            "is_major_upgrade_enabled": "true",
+                            "limit": 10,
+                            "minimum_age": 365,
+                        },
+                        "auto_remediation_prs": {
+                            "is_backlog_prs_enabled": "true",
+                            "is_fresh_prs_enabled": "true",
+                            "is_patch_remediation_enabled": "true",
+                        },
+                        "manual_remediation_prs": {
+                            "is_patch_remediation_enabled": "true"
+                        },
+                        "pull_request_assignment": {
+                            "assignees": ["my-github-username"],
+                            "is_enabled": "true",
+                            "type": "auto",
+                        },
+                        "pull_requests": {
+                            "fail_only_for_issues_with_fix": "true",
+                            "policy": "all",
+                            "severity_threshold": "high",
+                        },
+                        "recurring_tests": {"frequency": "daily"},
+                    },
+                    "status": "active",
+                    "tags": [{"key": "some-key", "value": "some-value"}],
+                    "target_file": "package.json",
+                    "target_reference": "main",
+                    "target_runtime": "string",
+                    "type": "npm",
+                },
+                "id": "6d5813be-7e6d-4ab8-80c2-1e3e2a454545",
+                "meta": {
+                    "cli_monitored_at": "2023-01-13T09:50:54.014Z",
+                    "latest_dependency_total": {
+                        "total": 0,
+                        "updated_at": "2023-01-13T09:50:54.014Z",
+                    },
+                    "latest_issue_counts": {
+                        "critical": 1,
+                        "high": 13,
+                        "low": 8,
+                        "medium": 15,
+                        "updated_at": "2023-01-13T09:50:54.014Z",
+                    },
+                },
+                "relationships": {
+                    "importer": {
+                        "data": {
+                            "id": "4a72d1db-b465-4764-99e1-ecedad03b06a",
+                            "type": "resource",
+                        },
+                        "links": {
+                            "related": {
+                                "href": "https://example.com/api/resource/4a72d1db-b465-4764-99e1-ecedad03b06a"
+                            }
+                        },
+                    },
+                    "organization": {
+                        "data": {
+                            "id": "4a72d1db-b465-4764-99e1-ecedad03b06a",
+                            "type": "resource",
+                        },
+                        "links": {
+                            "related": {
+                                "href": "https://example.com/api/resource/4a72d1db-b465-4764-99e1-ecedad03b06a"
+                            }
+                        },
+                    },
+                    "owner": {
+                        "data": {
+                            "id": "4a72d1db-b465-4764-99e1-ecedad03b06a",
+                            "type": "resource",
+                        },
+                        "links": {
+                            "related": {
+                                "href": "https://example.com/api/resource/4a72d1db-b465-4764-99e1-ecedad03b06a"
+                            }
+                        },
+                    },
+                    "target": {
+                        "data": {
+                            "id": "4a72d1db-b465-4764-99e1-ecedad03b06a",
+                            "type": "resource",
+                        },
+                        "links": {
+                            "related": {
+                                "href": "https://example.com/api/resource/4a72d1db-b465-4764-99e1-ecedad03b06a"
+                            }
+                        },
+                    },
+                },
+                "type": "project",
+            }
         }
 
     @pytest.fixture
@@ -159,49 +259,42 @@ class TestOrganization(TestModels):
     def test_packagejson_test_with_file(
         self, organization, base_url, blank_test, fake_file, requests_mock
     ):
-
         requests_mock.post("%s/test/npm" % base_url, json=blank_test)
         assert organization.test_packagejson(fake_file)
 
     def test_packagejson_test_with_files(
         self, organization, base_url, blank_test, fake_file, requests_mock
     ):
-
         requests_mock.post("%s/test/npm" % base_url, json=blank_test)
         assert organization.test_packagejson(fake_file, fake_file)
 
     def test_gradlefile_test_with_file(
         self, organization, base_url, blank_test, fake_file, requests_mock
     ):
-
         requests_mock.post("%s/test/gradle" % base_url, json=blank_test)
         assert organization.test_gradlefile(fake_file)
 
     def test_sbt_test_with_file(
         self, organization, base_url, blank_test, fake_file, requests_mock
     ):
-
         requests_mock.post("%s/test/sbt" % base_url, json=blank_test)
         assert organization.test_sbt(fake_file)
 
     def test_pom_test_with_file(
         self, organization, base_url, blank_test, fake_file, requests_mock
     ):
-
         requests_mock.post("%s/test/maven" % base_url, json=blank_test)
         assert organization.test_pom(fake_file)
 
     def test_composer_with_files(
         self, organization, base_url, blank_test, fake_file, requests_mock
     ):
-
         requests_mock.post("%s/test/composer" % base_url, json=blank_test)
         assert organization.test_composer(fake_file, fake_file)
 
     def test_yarn_with_files(
         self, organization, base_url, blank_test, fake_file, requests_mock
     ):
-
         requests_mock.post("%s/test/yarn" % base_url, json=blank_test)
         assert organization.test_yarn(fake_file, fake_file)
 
@@ -274,17 +367,23 @@ class TestOrganization(TestModels):
         assert organization.invite("example@example.com", admin=True)
 
     def test_get_project(self, organization, project, requests_mock):
-        matcher = re.compile("project/6d5813be-7e6d-4ab8-80c2-1e3e2a454545$")
+        matcher = re.compile(
+            "projects/6d5813be-7e6d-4ab8-80c2-1e3e2a454545\\?([^&=]+=[^&=]+&?)+$"
+        )
         requests_mock.get(matcher, json=project)
         assert (
             "atokeneduser/goof"
-            == organization.projects.get("6d5813be-7e6d-4ab8-80c2-1e3e2a454545").name
+            == organization.projects.get(
+                "6d5813be-7e6d-4ab8-80c2-1e3e2a454545"
+            ).attributes.name
         )
 
     def test_get_project_organization_has_client(
         self, organization, project, requests_mock
     ):
-        matcher = re.compile("project/6d5813be-7e6d-4ab8-80c2-1e3e2a454545$")
+        matcher = re.compile(
+            "projects/6d5813be-7e6d-4ab8-80c2-1e3e2a454545\\?([^&=]+=[^&=]+&?)+$"
+        )
         requests_mock.get(matcher, json=project)
         assert (
             organization.projects.get(
@@ -321,7 +420,9 @@ class TestOrganization(TestModels):
         assert organization.projects.filter() == []
 
     def test_tags_cache(self, organization, project, requests_mock):
-        matcher = re.compile("project/6d5813be-7e6d-4ab8-80c2-1e3e2a454545$")
+        matcher = re.compile(
+            "projects/6d5813be-7e6d-4ab8-80c2-1e3e2a454545\\?([^&=]+=[^&=]+&?)+$"
+        )
         requests_mock.get(matcher, json=project)
         assert organization.projects.get(
             "6d5813be-7e6d-4ab8-80c2-1e3e2a454545"
@@ -330,7 +431,9 @@ class TestOrganization(TestModels):
     def test_get_organization_project_has_tags(
         self, organization, project, requests_mock
     ):
-        matcher = re.compile("project/6d5813be-7e6d-4ab8-80c2-1e3e2a454545$")
+        matcher = re.compile(
+            "projects/6d5813be-7e6d-4ab8-80c2-1e3e2a454545\\?([^&=]+=[^&=]+&?)+$"
+        )
         requests_mock.get(matcher, json=project)
         assert organization.projects.get(
             "6d5813be-7e6d-4ab8-80c2-1e3e2a454545"
@@ -340,30 +443,133 @@ class TestOrganization(TestModels):
 class TestProject(TestModels):
     @pytest.fixture
     def project(self, organization):
-        return Project(
-            name="atokeneduser/goof",
-            id="6d5813be-7e6d-4ab8-80c2-1e3e2a454545",
-            created="2018-10-29T09:50:54.014Z",
-            origin="cli",
-            type="npm",
-            readOnly="false",
-            isMonitored="true",
-            testFrequency="daily",
-            lastTestedDate="2023-01-13T09:50:54.014Z",
-            issueCountsBySeverity={"critical": 1, "low": 8, "high": 13, "medium": 15},
-            organization=organization,
+        project = Project.from_dict(
+            {
+                "attributes": {
+                    "build_args": {"root_workspace": "string"},
+                    "business_criticality": ["medium"],
+                    "created": "2018-10-29T09:50:54.014Z",
+                    "environment": ["external", "hosted"],
+                    "lifecycle": ["production"],
+                    "name": "atokeneduser/goof",
+                    "origin": "github",
+                    "read_only": "false",
+                    "settings": {
+                        "auto_dependency_upgrade": {
+                            "ignored_dependencies": ["typescript"],
+                            "is_enabled": "true",
+                            "is_major_upgrade_enabled": "true",
+                            "limit": 10,
+                            "minimum_age": 365,
+                        },
+                        "auto_remediation_prs": {
+                            "is_backlog_prs_enabled": "true",
+                            "is_fresh_prs_enabled": "true",
+                            "is_patch_remediation_enabled": "true",
+                        },
+                        "manual_remediation_prs": {
+                            "is_patch_remediation_enabled": "true"
+                        },
+                        "pull_request_assignment": {
+                            "assignees": ["my-github-username"],
+                            "is_enabled": "true",
+                            "type": "auto",
+                        },
+                        "pull_requests": {
+                            "fail_only_for_issues_with_fix": "true",
+                            "policy": "all",
+                            "severity_threshold": "high",
+                        },
+                        "recurring_tests": {"frequency": "daily"},
+                    },
+                    "status": "active",
+                    "tags": [{"key": "some-key", "value": "some-value"}],
+                    "target_file": "package.json",
+                    "target_reference": "main",
+                    "target_runtime": "string",
+                    "type": "npm",
+                },
+                "id": "6d5813be-7e6d-4ab8-80c2-1e3e2a454545",
+                "meta": {
+                    "cli_monitored_at": "2023-01-13T09:50:54.014Z",
+                    "latest_dependency_total": {
+                        "total": 0,
+                        "updated_at": "2023-01-13T09:50:54.014Z",
+                    },
+                    "latest_issue_counts": {
+                        "critical": 1,
+                        "high": 13,
+                        "low": 8,
+                        "medium": 15,
+                        "updated_at": "2023-01-13T09:50:54.014Z",
+                    },
+                },
+                "relationships": {
+                    "importer": {
+                        "data": {
+                            "id": "4a72d1db-b465-4764-99e1-ecedad03b06a",
+                            "type": "resource",
+                        },
+                        "links": {
+                            "related": {
+                                "href": "https://example.com/api/resource/4a72d1db-b465-4764-99e1-ecedad03b06a"
+                            }
+                        },
+                    },
+                    "organization": {
+                        "data": {
+                            "id": "4a72d1db-b465-4764-99e1-ecedad03b06a",
+                            "type": "resource",
+                        },
+                        "links": {
+                            "related": {
+                                "href": "https://example.com/api/resource/4a72d1db-b465-4764-99e1-ecedad03b06a"
+                            }
+                        },
+                    },
+                    "owner": {
+                        "data": {
+                            "id": "4a72d1db-b465-4764-99e1-ecedad03b06a",
+                            "type": "resource",
+                        },
+                        "links": {
+                            "related": {
+                                "href": "https://example.com/api/resource/4a72d1db-b465-4764-99e1-ecedad03b06a"
+                            }
+                        },
+                    },
+                    "target": {
+                        "data": {
+                            "id": "4a72d1db-b465-4764-99e1-ecedad03b06a",
+                            "type": "resource",
+                        },
+                        "links": {
+                            "related": {
+                                "href": "https://example.com/api/resource/4a72d1db-b465-4764-99e1-ecedad03b06a"
+                            }
+                        },
+                    },
+                },
+                "type": "project",
+            }
         )
+        project.organization = organization
+        return project
 
     @pytest.fixture
     def project_url(self, organization_url, project):
         return "%s/project/%s" % (organization_url, project.id)
 
-    def test_delete(self, project, project_url, requests_mock):
-        requests_mock.delete(project_url)
+    @pytest.fixture
+    def project_rest_url(self, organization_rest_url, project):
+        return "%s/projects/%s" % (organization_rest_url, project.id)
+
+    def test_delete(self, project, project_rest_url, requests_mock):
+        requests_mock.delete(project_rest_url)
         assert project.delete()
 
-    def test_failed_delete(self, project, project_url, requests_mock):
-        requests_mock.delete(project_url, status_code=500)
+    def test_failed_delete(self, project, project_rest_url, requests_mock):
+        requests_mock.delete(project_rest_url, status_code=500)
         with pytest.raises(SnykError):
             project.delete()
 
@@ -385,16 +591,23 @@ class TestProject(TestModels):
         with pytest.raises(SnykError):
             project.deactivate()
 
-    def test_add_tag(self, project, project_url, requests_mock):
-        requests_mock.post(
-            "%s/tags" % project_url, json={"key": "key", "value": "value"}
-        )
+    def test_add_tag(self, project, project_rest_url, requests_mock):
+        matcher = re.compile(f"projects/{project.id}\\?([^&=]+=[^&=]+&?)+$")
+        response = project.to_dict()
+        response["attributes"]["tags"].append({"key": "key", "value": "value"})
+        del response["organization"]
+        requests_mock.patch(matcher, json=response)
         assert project.tags.add("key", "value")
 
     def test_delete_tag(self, project, project_url, requests_mock):
-        requests_mock.post(
-            "%s/tags/remove" % project_url, json={"key": "key", "value": "value"}
+        matcher = re.compile(f"projects/{project.id}\\?([^&=]+=[^&=]+&?)+$")
+        response = project.to_dict()
+        response["attributes"]["tags"] = filter(
+            lambda x: x["key"] == "key" and x["value"] == "value",
+            response["attributes"]["tags"],
         )
+        del response["organization"]
+        requests_mock.patch(matcher, json={"key": "key", "value": "value"})
         assert project.tags.delete("key", "value")
 
     def test_tags(self, project, project_url, requests_mock):
@@ -828,3 +1041,145 @@ class TestProject(TestModels):
             },
         )
         assert next(iter(project.dependency_graph.pkgs)).info.version is None
+
+    def test_get_project_by_id_default_query_parameters_are_passed(
+        self, organization, project, requests_mock
+    ):
+        matcher = re.compile(
+            "orgs/%s/projects/%s\\?(?=.*version=[0-9]{4}-[0-9]{2}-[0-9]{2}).*?(?=.*meta.latest_issue_counts=true).*?(?=.*expand=target)"
+            % (organization.id, project.id)
+        )
+        requests_mock.get(matcher, json={})
+        organization.projects.get(project.id)
+
+        assert requests_mock.call_count == 1
+
+    def test_get_all_projects_default_query_parameters_are_passed(
+        self, organization, project, requests_mock
+    ):
+        matcher = re.compile(
+            "orgs/%s/projects\\?(?=.*version=[0-9]{4}-[0-9]{2}-[0-9]{2}).*?(?=.*meta.latest_issue_counts=true).*?(?=.*expand=target).*?(?=.*limit=([1-9]0)|100)"
+            % organization.id
+        )
+        requests_mock.get(matcher, json={})
+        organization.projects.all()
+
+        assert requests_mock.call_count == 1
+
+    def test_filter_projects_has_tags_in_query_params(
+        self, organization, project, requests_mock
+    ):
+        tags = [
+            {"key": "some-key", "value": "some-value"},
+            {"key": "other-key", "value": "other-value"},
+        ]
+        matcher = re.compile(
+            "orgs/"
+            + organization.id
+            + "/projects\\?(?=.*version=[0-9]{4}-[0-9]{2}-[0-9]{2}).*?(?=.*meta.latest_issue_counts=true).*?(?=.*expand=target).*?(?=.*limit=([1-9]0)|100).*?(?=.*tags=some-key%3Asome-value%2Cother-key%3Aother-value)"
+        )
+        requests_mock.get(matcher, json={})
+        organization.projects.filter(tags=tags)
+        assert requests_mock.call_count == 1
+
+    def test_filter_projects_has_tags_and_params_in_query_params(
+        self, organization, requests_mock
+    ):
+        params = {
+            "environment": ["backend", "frontend"],
+            "business_criticality": ["critical", "high"],
+        }
+        tags = [
+            {"key": "some-key", "value": "some-value"},
+            {"key": "other-key", "value": "other-value"},
+        ]
+        matcher = re.compile(
+            "orgs/"
+            + organization.id
+            + "/projects\\?(?=.*version=[0-9]{4}-[0-9]{2}-[0-9]{2}).*?(?=.*meta.latest_issue_counts=true).*?(?=.*expand=target).*?(?=.*limit=([1-9]0)|100).*?(?=.*tags=some-key%3Asome-value%2Cother-key%3Aother-value).*?(?=.*environment=backend%2Cfrontend).*?(?=.*business_criticality=critical%2Chigh)"
+        )
+
+        requests_mock.get(matcher, json={})
+        organization.projects.filter(tags=tags, **params)
+
+        assert requests_mock.call_count == 1
+
+    def test_get_all_projects_has_query_params_when_passed(
+        self, organization, requests_mock
+    ):
+        params = {
+            "environment": ["backend", "frontend"],
+            "business_criticality": ["critical", "high"],
+            "tags": [
+                {"key": "some-key", "value": "some-value"},
+                {"key": "other-key", "value": "other-value"},
+            ],
+        }
+
+        matcher = re.compile(
+            "orgs/"
+            + organization.id
+            + "/projects\\?(?=.*version=[0-9]{4}-[0-9]{2}-[0-9]{2}).*?(?=.*meta.latest_issue_counts=true).*?(?=.*expand=target).*?(?=.*limit=([1-9]0)|100).*?(?=.*tags=some-key%3Asome-value%2Cother-key%3Aother-value).*?(?=.*environment=backend%2Cfrontend).*?(?=.*business_criticality=critical%2Chigh)"
+        )
+
+        requests_mock.get(matcher, json={})
+        organization.projects.all(params=params)
+        assert requests_mock.call_count == 1
+
+    def test_update_project_has_query_params_when_passed(
+        self, organization, project, requests_mock
+    ):
+        params = {"expand": "target"}
+        matcher = re.compile(
+            "orgs/%s/projects/%s\\?(?=.*version=[0-9]{4}-[0-9]{2}-[0-9]{2}).*?(?=.*expand=target)"
+            % (organization.id, project.id)
+        )
+
+        requests_mock.patch(matcher, json={})
+
+        organization.projects.update(project.id, params=params)
+
+        assert requests_mock.call_count == 1
+
+    def test_update_project_with_every_field(
+        self, organization, project, requests_mock
+    ):
+        matcher = re.compile(
+            "orgs/%s/projects/%s\\?version=[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+            % (organization.id, project.id)
+        )
+        tags = [{"key": "key-test", "value": "value-test"}]
+        environment = ["backend", "frontend"]
+        business_criticality = ["critical", "low", "medium"]
+        lifecycle = ["development", "production"]
+        test_frequency = "daily"
+        owner_id = "768af31a-e3b5-49a9-a612-96eb4ba0a66f"
+        body = {
+            "data": {
+                "id": project.id,
+                "attributes": {
+                    "tags": tags,
+                    "environment": environment,
+                    "business_criticality": business_criticality,
+                    "lifecycle": lifecycle,
+                    "test_frequency": test_frequency,
+                },
+                "relationships": {"owner": {"data": {"id": owner_id, "type": "user"}}},
+                "type": "project",
+            },
+        }
+        requests_mock.patch(matcher, json={})
+
+        resp = organization.projects.update(
+            project.id,
+            tags=tags,
+            environment=environment,
+            lifecycle=lifecycle,
+            business_criticality=business_criticality,
+            test_frequency=test_frequency,
+            owner_id=owner_id,
+        )
+        history = requests_mock.request_history
+        assert requests_mock.call_count == 1
+        assert resp == True
+        assert history[0].json() == body
