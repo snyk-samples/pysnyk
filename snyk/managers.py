@@ -157,13 +157,13 @@ class ProjectManager(Manager):
     def _query(self, next_url: str = None, params: Dict[str, Any] = {}):
         projects = []
         if "limit" not in params:
-            params["limit"] = 100
+            params["limit"] = 10
 
         if self.instance:
             path = "/orgs/%s/projects" % self.instance.id if not next_url else next_url
 
             # Append to params if we've got tags
-            if "tags" in params:
+            if "tags" in params and not next_url:
                 for tag in params["tags"]:
                     if "key" not in tag or "value" not in tag or len(tag.keys()) != 2:
                         raise SnykError("Each tag must contain only a key and a value")
