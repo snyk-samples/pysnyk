@@ -1153,6 +1153,7 @@ class TestProject(TestModels):
         business_criticality = ["critical", "low", "medium"]
         lifecycle = ["development", "production"]
         test_frequency = "daily"
+        owner_id = "768af31a-e3b5-49a9-a612-96eb4ba0a66f"
         body = {
             "data": {
                 "id": project.id,
@@ -1163,7 +1164,7 @@ class TestProject(TestModels):
                     "lifecycle": lifecycle,
                     "test_frequency": test_frequency,
                 },
-                "relationships": {},
+                "relationships": {"owner": {"data": {"id": owner_id, "type": "user"}}},
                 "type": "project",
             },
         }
@@ -1176,6 +1177,7 @@ class TestProject(TestModels):
             lifecycle=lifecycle,
             business_criticality=business_criticality,
             test_frequency=test_frequency,
+            owner_id=owner_id,
         )
         history = requests_mock.request_history
         assert requests_mock.call_count == 1

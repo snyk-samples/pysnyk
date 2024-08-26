@@ -268,6 +268,7 @@ class ProjectManager(Manager):
         business_criticality: Optional[List[str]] = None,
         lifecycle: Optional[List[str]] = None,
         test_frequency: Optional[str] = None,
+        owner_id: Optional[str] = None,
     ) -> bool:
         if not self.instance:
             self.instance = self.get(id).organization
@@ -297,6 +298,11 @@ class ProjectManager(Manager):
 
         if test_frequency:
             body["data"]["attributes"]["test_frequency"] = test_frequency
+
+        if owner_id:
+            body["data"]["relationships"] = {
+                "owner": {"data": {"id": owner_id, "type": "user"}}
+            }
 
         return bool(self.client.patch(path, body, params=params))
 
