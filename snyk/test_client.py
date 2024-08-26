@@ -527,18 +527,3 @@ class TestSnykClient(object):
 
         client.delete(f"orgs/{REST_ORG}")
         assert requests_mock.call_count == 1
-
-    def test_delete_redirects_to_rest_api_for_delete_project(
-        self, client, requests_mock, projects
-    ):
-        project = projects["data"][0]
-        matcher = re.compile(
-            "orgs/%s/projects/%s\\?version=2[0-9]{3}-[0-9]{2}-[0-9]{2}$"
-            % (REST_ORG, project["id"])
-        )
-
-        requests_mock.delete(matcher, json={}, status_code=200)
-
-        client.delete(f"org/{REST_ORG}/project/{project['id']}")
-
-        assert requests_mock.call_count == 1

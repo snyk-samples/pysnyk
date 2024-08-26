@@ -716,12 +716,12 @@ class Project(DataClassJSONMixin):
     _tags: Optional[List[Any]] = field(default_factory=list)
 
     def delete(self) -> bool:
-        path = "org/%s/project/%s" % (self.organization.id, self.id)
+        path = "orgs/%s/projects/%s" % (self.organization.id, self.id)
 
         if self.organization.client is None:
             raise SnykError
 
-        return bool(self.organization.client.delete(path))
+        return bool(self.organization.client.delete(path, use_rest=True))
 
     def activate(self) -> bool:
         path = "org/%s/project/%s/activate" % (self.organization.id, self.id)

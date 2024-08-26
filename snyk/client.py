@@ -51,9 +51,6 @@ class SnykClient(object):
         self.delay = delay
         self.verify = verify
         self.version = version
-        self.__uuid_pattern = (
-            r"[0-9a-f]{8}-[0-9a-f]{4}-[4][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
-        )
         self.__latest_version = "2024-06-21"
 
         # Ensure we don't have a trailing /
@@ -278,14 +275,7 @@ class SnykClient(object):
         return resp
 
     def delete(self, path: str, use_rest: bool = False) -> requests.Response:
-        is_v1_project_path: bool = self.__is_v1_project_path(path)
-        if is_v1_project_path:
-            ids = re.findall(rf"{self.__uuid_pattern}", path)
-            path = f"orgs/{ids[0]}/projects/{ids[1]}"
-            url = f"{self.rest_api_url}/{path}"
-            use_rest = True
-        else:
-            url = f"{self.rest_api_url if use_rest else self.api_url}/{path}"
+        url = f"{self.rest_api_url if use_rest else self.api_url}/{path}"
 
         params = {}
         if use_rest:
@@ -386,14 +376,3 @@ class SnykClient(object):
     # https://snyk.docs.apiary.io/#reference/reporting-api/issues/get-list-of-issues
     def issues(self):
         raise SnykNotImplementedError  # pragma: no cover
-
-    def __is_v1_project_path(self, path: str) -> bool:
-        v1_paths: List[Pattern[str]] = [
-            re.compile(f"^org/{self.__uuid_pattern}/project/{self.__uuid_pattern}$")
-        ]
-
-        for v1_path in v1_paths:
-            if re.match(v1_path, path):
-                return True
-
-        return False
