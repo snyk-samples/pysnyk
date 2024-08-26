@@ -112,6 +112,7 @@ for next_project in all_projects_list:
     next_project_id = next_project["project_id"]
 
     if args.projectId == "all" or next_project_id == args.projectId:
+        # Deprecated, check api-demo-2c-list-issues-aggregated
         next_project_tree = ProjectDependenciesReport.get_project_tree(
             snyk_token, org_id, next_project_id
         )

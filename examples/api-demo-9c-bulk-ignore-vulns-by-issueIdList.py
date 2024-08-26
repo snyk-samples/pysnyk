@@ -62,6 +62,7 @@ for proj in client.organizations.get(org_id).projects.all():
     print("      High  : %s" % proj.meta.latest_issue_counts.high)
     print("      Medium: %s" % proj.meta.latest_issue_counts.medium)
     print("      Low   : %s" % proj.meta.latest_issue_counts.low)
+    #Deprecated, check api-demo-2c-list-issues-aggregated
     url = "org/" + org_id + "/project/" + proj.id + "/issues"
     print(url)
     # API call to grab all of the issue
