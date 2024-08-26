@@ -295,4 +295,7 @@ project.isMonitored -> project.attributes.status
 project.targetReference -> project.attributes.target_reference
 ```
 
-To update an existing project, the Snyk client will be used:
+To update an existing project, the update method from `ProjectManager` can be used, as in the following example:
+```python
+client.organizations.get(org_id).projects.update(project_id, tags=[{"key":"added_tag_key2", "value":"added_tag_value2"}], environment=[], business_criticality=["critical","low","medium"], lifecycle=["development","production"], test_frequency="daily")
+```
