@@ -157,7 +157,7 @@ class ProjectManager(Manager):
     def _query(self, next_url: str = None, params: Dict[str, Any] = {}):
         projects = []
         if "limit" not in params:
-            params["limit"] = 10
+            params["limit"] = 100
 
         if self.instance:
             path = "/orgs/%s/projects" % self.instance.id if not next_url else next_url
